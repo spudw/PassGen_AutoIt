@@ -1,5 +1,20 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
+#AutoIt3Wrapper_Res_FileVersion = 1.1
+
+; Version History
+;
+; Version 1.1 - 2020/08/20
+;		Feature Additions
+;		[+] Added Password Masking functionality
+;		[+] Added Minimize to Tray functionality
+;
+; Version 1.0.1 - 2020/02/25
+;		Minor Customization
+;		[*] Changed EXE Icom
+;
+; Version 1.0 - 2020/05/20
+;		Original Full Release
 
 #include <WinAPI.au3>
 #include <Crypt.au3>
@@ -12,11 +27,17 @@
 #include <EditConstants.au3>
 #include <StringConstants.au3>
 #include <StaticConstants.au3>
+#include <TrayConstants.au3>
+
+#include <APISysConstants.au3>
+#include <WinAPISysWin.au3>
 
 
 Opt("GUIOnEventMode", 1)
 Opt("TrayMenuMode", 1)
-Opt("TrayIconHide", 1)
+Opt("TrayOnEventMode", 1)
+TraySetOnEvent($TRAY_EVENT_PRIMARYDOUBLE, "GUIRestore")
+;Opt("TrayIconHide", 1)
 
 Const $sCharacterList = "ABCEFGHKLMNPQRSTUVWXYZ0987654321abdefghjmnqrtuwy"
 Const $iCharacterListLen = StringLen($sCharacterList)
@@ -31,7 +52,7 @@ Enum $hGUI = 1, $idBtnRevealKey, $idLblKey, $idTxtKey, $idBtnKey, $idLblPassphra
 ReDim $aGUI[$iGUILast]
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU))
+$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU, $WS_MINIMIZEBOX))
 $aGUI[$idBtnRevealKey] = GUICtrlCreateCheckbox("&Show", 12, 12, 44, 28, BitOR($BS_PUSHLIKE, $BS_AUTOCHECKBOX))
 GUICtrlSetState(-1, $GUI_UNCHECKED)
 GUICtrlSetOnEvent(-1, "GUIEvents")
@@ -42,7 +63,6 @@ $aGUI[$idTxtKey] = GUICtrlCreateInput("", 104, 10, 330, 34, $ES_PASSWORD)
 Const $ES_PASSWORDCHAR = GUICtrlSendMsg(-1, $EM_GETPASSWORDCHAR, 0, 0)
 GUICtrlSetState(-1, $GUI_DISABLE)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idBtnKey] = GUICtrlCreateButton("&Change", 442, 10, 58, 34, $BS_DEFPUSHBUTTON)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idLblPassphrase] = GUICtrlCreateLabel("Passphrase:", 16, 68, 100, 20)
@@ -53,7 +73,6 @@ GUICtrlSetFont(-1, 9, $FW_NORMAL, $GUI_FONTITALIC, "Times New Roman")
 $aGUI[$idTxtPassphrase] = GUICtrlCreateInput("", 104, 62, 330, 34)
 GUICtrlSetState(-1, $GUI_FOCUS)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idBtnPassphrase] = GUICtrlCreateButton("C&opy", 451, 62, 40, 34)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 GUICtrlSetState(-1, $GUI_DISABLE)
@@ -65,10 +84,10 @@ GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTUNDER)
 $aGUI[$idLblPasswordUse] = GUICtrlCreateLabel("Use to Encrypt", 24, 167, 100, 20)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 9, $FW_NORMAL, $GUI_FONTITALIC, "Times New Roman")
-$aGUI[$idTxtPassword] = GUICtrlCreateInput("", 104, 142, 330, 34, BitOR($ES_READONLY, $SS_CENTER))
+$aGUI[$idTxtPassword] = GUICtrlCreateInput("", 104, 142, 330, 34, BitOR($ES_READONLY, $SS_CENTER, $ES_PASSWORD))
+GUICtrlSendMsg(-1, $EM_GETPASSWORDCHAR, $ES_PASSWORDCHAR, 0)
 GUICtrlSetBkColor(-1, 0xFFFFFF)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idBtnPassword] = GUICtrlCreateButton("Co&py", 451, 142, 40, 34)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 GUICtrlSetState(-1, $GUI_DISABLE)
@@ -77,7 +96,10 @@ GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTITALIC)
 
 GUISetOnEvent($GUI_EVENT_CLOSE, "GUIEvents")
+GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUIEvents")
 GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
+GUIRegisterMsg($WM_ACTIVATE, "WM_ACTIVATE")
+GUIRegisterMsg($WM_SIZE, "WM_SIZE")
 
 GUISetState(@SW_SHOW)
 #EndRegion - UI Creation
@@ -95,6 +117,9 @@ Func GUIEvents()
 	Switch $iCtrl
 		Case $GUI_EVENT_CLOSE
 			Exit
+		Case $GUI_EVENT_MINIMIZE
+			PasswordHide()
+			GUIHide()
 		Case $aGUI[$idBtnRevealKey]
 			idBtnRevealKey_Click()
 		Case $aGUI[$idBtnKey]
@@ -105,6 +130,15 @@ Func GUIEvents()
 			idBtnPassword_Click()
 	EndSwitch
 EndFunc   ;==>GUIEvents
+
+Func GUIHide()
+	GUISetState(@SW_HIDE)
+EndFunc   ;==>GUIHide
+
+Func GUIRestore()
+	GUISetState(@SW_SHOW)
+	WinActivate($aGUI[$hGUI])
+EndFunc   ;==>GUIRestore
 
 Func idBtnRevealKey_Click()
 	Local $iCtrl = $aGUI[$idBtnRevealKey]
@@ -166,15 +200,47 @@ EndFunc   ;==>idTxtPassword_SetData
 Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 	Local $iIDFrom = BitAND($wParam, 0xFFFF) ; LoWord - this gives the control which sent the message
 	Local $iCode = BitShift($wParam, 16) ; HiWord - this gives the message that was sent
-	If $iCode = $EN_CHANGE Then ; If we have the correct message
-		Switch $iIDFrom ; See if it comes from one of the inputs
-			Case $aGUI[$idTxtKey]
-				idTxtKey_OnChange()
-			Case $aGUI[$idTxtPassphrase]
-				idTxtPassphrase_OnChange()
-		EndSwitch
-	EndIf
+	Switch $iCode
+		Case $EN_CHANGE ; If we have the correct message
+			Switch $iIDFrom ; See if it comes from one of the inputs
+				Case $aGUI[$idTxtKey]
+					idTxtKey_OnChange()
+				Case $aGUI[$idTxtPassphrase]
+					idTxtPassphrase_OnChange()
+			EndSwitch
+		Case $EN_SETFOCUS
+			Switch $iIDFrom
+				Case $aGUI[$idTxtPassword]
+					PasswordShow()
+			EndSwitch
+		Case $EN_KILLFOCUS
+			Switch $iIDFrom
+				Case $aGUI[$idTxtPassword]
+					PasswordHide()
+			EndSwitch
+	EndSwitch
 EndFunc   ;==>WM_COMMAND
+
+Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
+	Local $iCode = BitAND($wParam, 0xFFFF)
+	Switch $hWnd
+		Case $aGUI[$hGUI]
+			Switch $iCode
+				Case 0 ; WA_INACTIVE
+					PasswordHide()
+			EndSwitch
+	EndSwitch
+EndFunc   ;==>WM_ACTIVATE
+
+Func WM_SIZE($hWnd, $iMsg, $wParam, $lParam)
+	Switch $hWnd
+		Case $aGUI[$hGUI]
+			Switch $wParam
+				Case 1 ; WA_INACTIVE
+					PasswordHide()
+			EndSwitch
+	EndSwitch
+EndFunc   ;==>WM_SIZE
 #EndRegion - UI Event Functions
 
 #Region - Additonal Functions
@@ -200,6 +266,16 @@ Func GeneratePassword()
 	idTxtPassword_SetData($sPassword)
 	idBtnPassword_Click()
 EndFunc   ;==>GeneratePassword
+
+Func InputboxMask($iCtrl, $bMask = True)
+	Switch $bMask
+		Case False
+			GUICtrlSendMsg($iCtrl, $EM_SETPASSWORDCHAR, 0, 0)
+		Case True
+			GUICtrlSendMsg($iCtrl, $EM_SETPASSWORDCHAR, $ES_PASSWORDCHAR, 0)
+	EndSwitch
+	Local $aRes = DllCall("user32.dll", "int", "RedrawWindow", "hwnd", GUICtrlGetHandle($iCtrl), "ptr", 0, "ptr", 0, "dword", 5)
+EndFunc   ;==>InputboxMask
 
 Func KeyChange()
 	PasswordClear()
@@ -236,7 +312,7 @@ Func KeyGetValue()
 EndFunc   ;==>KeyGetValue
 
 Func KeyHide()
-	KeyMask(True)
+	InputboxMask($aGUI[$idTxtKey])
 EndFunc   ;==>KeyHide
 
 Func KeyMask($bMask = True)
@@ -283,7 +359,7 @@ Func KeySaveToReg()
 EndFunc   ;==>KeySaveToReg
 
 Func KeyShow()
-	KeyMask(False)
+	InputboxMask($aGUI[$idTxtKey], False)
 EndFunc   ;==>KeyShow
 
 Func KeyUnprotect($hProtectedKey)
@@ -318,6 +394,15 @@ Func PasswordClear()
 	ClipboardClear()
 	idTxtPassword_SetData("")
 EndFunc   ;==>PasswordClear
+
+Func PasswordHide()
+	InputboxMask($aGUI[$idTxtPassword])
+	GUICtrlSetState($aGUI[$idTxtPassphrase], $GUI_FOCUS)
+EndFunc   ;==>PasswordHide
+
+Func PasswordShow()
+	InputboxMask($aGUI[$idTxtPassword], False)
+EndFunc   ;==>PasswordShow
 
 Func RegistryKeyWriteBinary($hValue)
 	Return RegWrite($sRegKeyPath, "Key", "REG_BINARY", $hValue)
