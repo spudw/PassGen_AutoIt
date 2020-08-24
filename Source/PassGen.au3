@@ -1,10 +1,15 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "1.2.1"
-#AutoIt3Wrapper_Res_FileVersion = 1.2.1
+Const $sVersion = "1.2.1.1"
+#AutoIt3Wrapper_Res_FileVersion = 1.2.1.1
 #AutoIt3Wrapper_Res_ProductName = PassGen
 
 ; Version History
+;
+; Version 1.2.1.1 - 2020/08/24
+;		Minor Tray Tweaks
+;		[*] Made system tray icon always shown
+;		[*] Minor Tray Menu changes
 ;
 ; Version 1.2.1 - 2020/08/24
 ;		Functional Changes & Minor Code Cleanup
@@ -95,9 +100,11 @@ GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptionsCloseToTray] = GUICtrlCreateMenuItem("&Enable Close to Tray", $aGUI[$idMnuOptions])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 TrayCreateItem("PassGen v" & $sVersion)
+TrayItemSetState(-1, $TRAY_DISABLE)
 TrayCreateItem("")
 $aGUI[$idTrayOpen] = TrayCreateItem("Open")
 TrayItemSetOnEvent(-1, "TrayEvents")
+TrayItemSetState(-1, $TRAY_DEFAULT)
 TrayCreateItem("")
 $aGUI[$idTrayQuit] = TrayCreateItem("Quit")
 TrayItemSetOnEvent(-1, "TrayEvents")
@@ -196,11 +203,11 @@ Func GUIHide()
 	PasswordHide()
 	GUISetState(@SW_HIDE)
 	GUISetState(@SW_DISABLE)
-	TraySetState($TRAY_ICONSTATE_SHOW)
+	;TraySetState($TRAY_ICONSTATE_SHOW)
 EndFunc   ;==>GUIHide
 
 Func GUIRestore()
-	TraySetState($TRAY_ICONSTATE_HIDE)
+	;TraySetState($TRAY_ICONSTATE_HIDE)
 	GUISetState(@SW_ENABLE)
 	GUISetState(@SW_SHOW)
 	WinActivate($aGUI[$hGUI])
