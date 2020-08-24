@@ -1,8 +1,23 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-#AutoIt3Wrapper_Res_FileVersion = 1.1
+#AutoIt3Wrapper_Res_FileVersion = 1.2
 
 ; Version History
+;
+; Version 1.2 - 2020/08/21
+;		Code Cleanup & Feature Additions
+;		[*] Removed unnecessary code
+;		[+] Clear Clipboard on Exit
+;		[+] Added Menubar with functions
+;			File > Exit
+;			Options > Automatic Startup on Login
+;		[+] Added Tray Menu with functions
+;			Open, Quit
+;		[*] Changed Tray Icon behavior - Hide when GUI visible, Show when GUI hidden
+;		[*] Changed Tray Icon click behavior
+;			Single Left-Click restores GUI
+;			Single Right-Click open Tray Menu
+;		[-] Removed Minimize button
 ;
 ; Version 1.1 - 2020/08/20
 ;		Feature Additions
@@ -18,6 +33,7 @@
 
 #include <WinAPI.au3>
 #include <Crypt.au3>
+#include <Misc.au3>
 #include <WinAPISysWin.au3>
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
@@ -25,34 +41,44 @@
 #include <FontConstants.au3>
 #include <ButtonConstants.au3>
 #include <EditConstants.au3>
-#include <StringConstants.au3>
 #include <StaticConstants.au3>
 #include <TrayConstants.au3>
 
-#include <APISysConstants.au3>
-#include <WinAPISysWin.au3>
-
+If _Singleton("PassGen", 1) = 0 Then Exit
 
 Opt("GUIOnEventMode", 1)
-Opt("TrayMenuMode", 1)
+Opt("TrayMenuMode", 1+2)
 Opt("TrayOnEventMode", 1)
-TraySetOnEvent($TRAY_EVENT_PRIMARYDOUBLE, "GUIRestore")
-;Opt("TrayIconHide", 1)
+TraySetClick(16)
 
 Const $sCharacterList = "ABCEFGHKLMNPQRSTUVWXYZ0987654321abdefghjmnqrtuwy"
 Const $iCharacterListLen = StringLen($sCharacterList)
 Const $sRegKeyPath = "HKCU\Software\PassGen"
+Const $sStartupLink = @StartupDir & "\PassGen.exe.lnk"
+Const $sProgramPath = @ProgramsDir & "\PassGen\PassGen.exe"
 
 Const $tagDATA_BLOB = "DWORD cbData;ptr pbData;"
 Const $tagCRYPTPROTECT_PROMPTSTRUCT = "DWORD cbSize;DWORD dwPromptFlags;HWND hwndApp;ptr szPrompt;"
 
 Dim $aGUI[1] = ["hwnd|id"]
-Enum $hGUI = 1, $idBtnRevealKey, $idLblKey, $idTxtKey, $idBtnKey, $idLblPassphrase, $idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, _
-		$idLblPassword, $idLblPasswordUse, $idTxtPassword, $idBtnPassword, $idLblPasswordMsg, $iGUILast
+Enum $hGUI = 1, $idMnuFile, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idBtnKey, $idLblPassphrase, _
+		$idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, $idBtnPassword, $idLblPasswordMsg, $iGUILast
 ReDim $aGUI[$iGUILast]
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU, $WS_MINIMIZEBOX))
+$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU))
+$aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
+$aGUI[$idMnuFileQuit] = GUICtrlCreateMenuItem("&Quit", $aGUI[$idMnuFile])
+GUICtrlSetOnEvent(-1, "GUIEvents")
+$aGUI[$idMnuOptions] = GUICtrlCreateMenu("&Options")
+$aGUI[$idMnuOptionsAutoStart] = GUICtrlCreateMenuItem("&Automatic Start on Login", $aGUI[$idMnuOptions])
+GUICtrlSetOnEvent(-1, "GUIEvents")
+GUICtrlSetOnEvent(-1, "GUIEvents")
+$aGUI[$idTrayOpen] = TrayCreateItem("Open")
+TrayItemSetOnEvent(-1, "TrayEvents")
+TrayCreateItem("")
+$aGUI[$idTrayQuit] = TrayCreateItem("Quit")
+TrayItemSetOnEvent(-1, "TrayEvents")
 $aGUI[$idBtnRevealKey] = GUICtrlCreateCheckbox("&Show", 12, 12, 44, 28, BitOR($BS_PUSHLIKE, $BS_AUTOCHECKBOX))
 GUICtrlSetState(-1, $GUI_UNCHECKED)
 GUICtrlSetOnEvent(-1, "GUIEvents")
@@ -85,7 +111,6 @@ $aGUI[$idLblPasswordUse] = GUICtrlCreateLabel("Use to Encrypt", 24, 167, 100, 20
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 9, $FW_NORMAL, $GUI_FONTITALIC, "Times New Roman")
 $aGUI[$idTxtPassword] = GUICtrlCreateInput("", 104, 142, 330, 34, BitOR($ES_READONLY, $SS_CENTER, $ES_PASSWORD))
-GUICtrlSendMsg(-1, $EM_GETPASSWORDCHAR, $ES_PASSWORDCHAR, 0)
 GUICtrlSetBkColor(-1, 0xFFFFFF)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
 $aGUI[$idBtnPassword] = GUICtrlCreateButton("Co&py", 451, 142, 40, 34)
@@ -95,31 +120,41 @@ $aGUI[$idLblPasswordMsg] = GUICtrlCreateLabel("", 104, 176, 330, 40, $SS_CENTER)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTITALIC)
 
-GUISetOnEvent($GUI_EVENT_CLOSE, "GUIEvents")
-GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUIEvents")
 GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 GUIRegisterMsg($WM_ACTIVATE, "WM_ACTIVATE")
-GUIRegisterMsg($WM_SIZE, "WM_SIZE")
-
-GUISetState(@SW_SHOW)
+GUISetOnEvent($GUI_EVENT_CLOSE, "GUIEvents")
+TraySetOnEvent($TRAY_EVENT_PRIMARYUP, "GUIRestore")
 #EndRegion - UI Creation
 
 KeyReadFromReg()
 If Not KeyIsPresent() Then KeyChange()
+If AutoStartIsEnabled() Then GUICtrlSetState($aGUI[$idMnuOptionsAutoStart], $GUI_CHECKED)
+
+If $CmdLineRaw = "/silent" Then
+	GUIHide()
+Else
+	GUIRestore()
+EndIf
 
 While 1
 	Sleep(10)
 WEnd
 
 #Region - UI Event Functions
+Func _Exit()
+	ClipboardClear()
+	Exit
+EndFunc   ;==>_Exit
+
 Func GUIEvents()
 	$iCtrl = @GUI_CtrlId
 	Switch $iCtrl
 		Case $GUI_EVENT_CLOSE
-			Exit
-		Case $GUI_EVENT_MINIMIZE
-			PasswordHide()
 			GUIHide()
+		Case $aGUI[$idMnuFileQuit]
+			_Exit()
+		Case $aGUI[$idMnuOptionsAutoStart]
+			idMnuOptionsAutoStart_Click()
 		Case $aGUI[$idBtnRevealKey]
 			idBtnRevealKey_Click()
 		Case $aGUI[$idBtnKey]
@@ -132,10 +167,15 @@ Func GUIEvents()
 EndFunc   ;==>GUIEvents
 
 Func GUIHide()
+	PasswordHide()
 	GUISetState(@SW_HIDE)
+	GUISetState(@SW_DISABLE)
+	TraySetState($TRAY_ICONSTATE_SHOW)
 EndFunc   ;==>GUIHide
 
 Func GUIRestore()
+	TraySetState($TRAY_ICONSTATE_HIDE)
+	GUISetState(@SW_ENABLE)
 	GUISetState(@SW_SHOW)
 	WinActivate($aGUI[$hGUI])
 EndFunc   ;==>GUIRestore
@@ -170,8 +210,19 @@ Func idBtnPassword_Click()
 	GUICtrlSetData($aGUI[$idLblPasswordMsg], "Copied to Clipboard")
 EndFunc   ;==>idBtnPassword_Click
 
+Func idMnuOptionsAutoStart_Click()
+	$id = $aGUI[$idMnuOptionsAutoStart]
+	If BitAND(GUICtrlRead($id), $GUI_CHECKED) Then
+		GUICtrlSetState($id, $GUI_UNCHECKED)
+		AutoStart(0)
+	Else
+		GUICtrlSetState($id, $GUI_CHECKED)
+		AutoStart()
+	EndIf
+EndFunc   ;==>idMnuOptionsAutoStart_Click
+
 Func idTxtKey_OnChange()
-	If Not KeyIsPresent() Then Return 0
+	Return KeyIsPresent()
 EndFunc   ;==>idTxtKey_OnChange
 
 Func idTxtKey_Read()
@@ -197,10 +248,22 @@ Func idTxtPassword_SetData($sValue)
 	GUICtrlSetData($aGUI[$idTxtPassword], $sValue)
 EndFunc   ;==>idTxtPassword_SetData
 
+Func TrayEvents()
+	$iCtrl = @TRAY_ID
+	Switch $iCtrl
+		Case $aGUI[$idTrayOpen]
+			GUIRestore()
+		Case $aGUI[$idTrayQuit]
+			_Exit()
+	EndSwitch
+EndFunc
+
 Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 	Local $iIDFrom = BitAND($wParam, 0xFFFF) ; LoWord - this gives the control which sent the message
 	Local $iCode = BitShift($wParam, 16) ; HiWord - this gives the message that was sent
 	Switch $iCode
+		Case $GUI_EVENT_CLOSE
+			ConsoleWrite("CLOSE")
 		Case $EN_CHANGE ; If we have the correct message
 			Switch $iIDFrom ; See if it comes from one of the inputs
 				Case $aGUI[$idTxtKey]
@@ -231,19 +294,24 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 			EndSwitch
 	EndSwitch
 EndFunc   ;==>WM_ACTIVATE
-
-Func WM_SIZE($hWnd, $iMsg, $wParam, $lParam)
-	Switch $hWnd
-		Case $aGUI[$hGUI]
-			Switch $wParam
-				Case 1 ; WA_INACTIVE
-					PasswordHide()
-			EndSwitch
-	EndSwitch
-EndFunc   ;==>WM_SIZE
 #EndRegion - UI Event Functions
 
 #Region - Additonal Functions
+Func AutoStart($bEnable = 1)
+	If $bEnable Then
+		FileCopy(@ScriptFullPath, $sProgramPath, $FC_CREATEPATH + $FC_OVERWRITE)
+		FileCreateShortcut($sProgramPath, $sStartupLink, "", "/silent")
+	Else
+		If FileExists($sStartupLink) Then FileDelete($sStartupLink)
+	EndIf
+EndFunc
+
+Func AutoStartIsEnabled()
+	Local $aShortcut = FileGetShortcut($sStartupLink)
+	If @error Then Return False
+	Return (FileExists($aShortcut[0])) ? True : False
+EndFunc
+
 Func ClipboardClear()
 	ClipPut("")
 EndFunc   ;==>ClipboardClear
@@ -314,16 +382,6 @@ EndFunc   ;==>KeyGetValue
 Func KeyHide()
 	InputboxMask($aGUI[$idTxtKey])
 EndFunc   ;==>KeyHide
-
-Func KeyMask($bMask = True)
-	Switch $bMask
-		Case False
-			GUICtrlSendMsg($aGUI[$idTxtKey], $EM_SETPASSWORDCHAR, 0, 0)
-		Case True
-			GUICtrlSendMsg($aGUI[$idTxtKey], $EM_SETPASSWORDCHAR, $ES_PASSWORDCHAR, 0)
-	EndSwitch
-	Local $aRes = DllCall("user32.dll", "int", "RedrawWindow", "hwnd", GUICtrlGetHandle($aGUI[$idTxtKey]), "ptr", 0, "ptr", 0, "dword", 5)
-EndFunc   ;==>KeyMask
 
 Func KeyProtect($sValue)
 	Return _CryptProtectData($sValue)
