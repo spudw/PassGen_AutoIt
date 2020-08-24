@@ -1,8 +1,15 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-#AutoIt3Wrapper_Res_FileVersion = 1.2
+#AutoIt3Wrapper_Res_FileVersion = 1.2.1
+#AutoIt3Wrapper_Res_ProductName = PassGen
 
 ; Version History
+;
+; Version 1.2.1 - 2020/08/24
+;		Functional Changes & Minor Code Cleanup
+;		[+] Restored Minimize button and added Taskbar Peek Preview GUI hide workaround
+;		[+] Added Close to Tray function option
+;		[*] Minor Code Cleanup
 ;
 ; Version 1.2 - 2020/08/21
 ;		Code Cleanup & Feature Additions
@@ -43,11 +50,20 @@
 #include <EditConstants.au3>
 #include <StaticConstants.au3>
 #include <TrayConstants.au3>
+#include <WinAPIGdi.au3>
 
-If _Singleton("PassGen", 1) = 0 Then Exit
+If _Singleton("PassGen", 1) = 0 Then
+	$sRunningProcessPath = _WinAPI_GetProcessFileName(ProcessExists("PassGen.exe"))
+	If $sRunningProcessPath = @ScriptFullPath Then Exit
+	If _VersionCompare(FileGetVersion(@ScriptFullPath), FileGetVersion($sRunningProcessPath)) = 1 Then
+		ProcessClose("PassGen.exe")
+	Else
+		Exit
+	EndIf
+EndIf
 
 Opt("GUIOnEventMode", 1)
-Opt("TrayMenuMode", 1+2)
+Opt("TrayMenuMode", 1 + 2)
 Opt("TrayOnEventMode", 1)
 TraySetClick(16)
 
@@ -57,22 +73,25 @@ Const $sRegKeyPath = "HKCU\Software\PassGen"
 Const $sStartupLink = @StartupDir & "\PassGen.exe.lnk"
 Const $sProgramPath = @ProgramsDir & "\PassGen\PassGen.exe"
 
+UpdatePassGen()
+
 Const $tagDATA_BLOB = "DWORD cbData;ptr pbData;"
 Const $tagCRYPTPROTECT_PROMPTSTRUCT = "DWORD cbSize;DWORD dwPromptFlags;HWND hwndApp;ptr szPrompt;"
 
 Dim $aGUI[1] = ["hwnd|id"]
-Enum $hGUI = 1, $idMnuFile, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idBtnKey, $idLblPassphrase, _
-		$idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, $idBtnPassword, $idLblPasswordMsg, $iGUILast
+Enum $hGUI = 1, $idMnuFile, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idMnuOptionsCloseToTray, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idBtnKey, _
+		$idLblPassphrase, $idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, $idBtnPassword, $idLblPasswordMsg, $iGUILast
 ReDim $aGUI[$iGUILast]
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU))
+$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 $aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
 $aGUI[$idMnuFileQuit] = GUICtrlCreateMenuItem("&Quit", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptions] = GUICtrlCreateMenu("&Options")
 $aGUI[$idMnuOptionsAutoStart] = GUICtrlCreateMenuItem("&Automatic Start on Login", $aGUI[$idMnuOptions])
 GUICtrlSetOnEvent(-1, "GUIEvents")
+$aGUI[$idMnuOptionsCloseToTray] = GUICtrlCreateMenuItem("&Enable Close to Tray", $aGUI[$idMnuOptions])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idTrayOpen] = TrayCreateItem("Open")
 TrayItemSetOnEvent(-1, "TrayEvents")
@@ -124,11 +143,13 @@ GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 GUIRegisterMsg($WM_ACTIVATE, "WM_ACTIVATE")
 GUISetOnEvent($GUI_EVENT_CLOSE, "GUIEvents")
 TraySetOnEvent($TRAY_EVENT_PRIMARYUP, "GUIRestore")
+_WinAPI_DwmSetWindowAttribute($aGUI[$hGUI], $DWMWA_FORCE_ICONIC_REPRESENTATION, 1)
 #EndRegion - UI Creation
 
 KeyReadFromReg()
 If Not KeyIsPresent() Then KeyChange()
 If AutoStartIsEnabled() Then GUICtrlSetState($aGUI[$idMnuOptionsAutoStart], $GUI_CHECKED)
+If CloseToTrayIsEnabled() Then GUICtrlSetState($aGUI[$idMnuOptionsCloseToTray], $GUI_CHECKED)
 
 If $CmdLineRaw = "/silent" Then
 	GUIHide()
@@ -150,11 +171,13 @@ Func GUIEvents()
 	$iCtrl = @GUI_CtrlId
 	Switch $iCtrl
 		Case $GUI_EVENT_CLOSE
-			GUIHide()
+			Return (CloseToTrayIsEnabled()) ? GUIHide() : _Exit()
 		Case $aGUI[$idMnuFileQuit]
 			_Exit()
 		Case $aGUI[$idMnuOptionsAutoStart]
 			idMnuOptionsAutoStart_Click()
+		Case $aGUI[$idMnuOptionsCloseToTray]
+			idMnuOptionsCloseToTray_Click()
 		Case $aGUI[$idBtnRevealKey]
 			idBtnRevealKey_Click()
 		Case $aGUI[$idBtnKey]
@@ -211,15 +234,14 @@ Func idBtnPassword_Click()
 EndFunc   ;==>idBtnPassword_Click
 
 Func idMnuOptionsAutoStart_Click()
-	$id = $aGUI[$idMnuOptionsAutoStart]
-	If BitAND(GUICtrlRead($id), $GUI_CHECKED) Then
-		GUICtrlSetState($id, $GUI_UNCHECKED)
-		AutoStart(0)
-	Else
-		GUICtrlSetState($id, $GUI_CHECKED)
-		AutoStart()
-	EndIf
+	Local $iState = MenuItemToggle($aGUI[$idMnuOptionsAutoStart])
+	AutoStart($iState)
 EndFunc   ;==>idMnuOptionsAutoStart_Click
+
+Func idMnuOptionsCloseToTray_Click()
+	Local $iState = MenuItemToggle($aGUI[$idMnuOptionsCloseToTray])
+	CloseToTraySetting($iState)
+EndFunc   ;==>idMnuOptionsCloseToTray_Click
 
 Func idTxtKey_OnChange()
 	Return KeyIsPresent()
@@ -248,6 +270,16 @@ Func idTxtPassword_SetData($sValue)
 	GUICtrlSetData($aGUI[$idTxtPassword], $sValue)
 EndFunc   ;==>idTxtPassword_SetData
 
+Func MenuItemToggle($id)
+	If BitAND(GUICtrlRead($id), $GUI_CHECKED) Then
+		GUICtrlSetState($id, $GUI_UNCHECKED)
+		Return 0
+	Else
+		GUICtrlSetState($id, $GUI_CHECKED)
+		Return 1
+	EndIf
+EndFunc   ;==>MenuItemToggle
+
 Func TrayEvents()
 	$iCtrl = @TRAY_ID
 	Switch $iCtrl
@@ -256,14 +288,12 @@ Func TrayEvents()
 		Case $aGUI[$idTrayQuit]
 			_Exit()
 	EndSwitch
-EndFunc
+EndFunc   ;==>TrayEvents
 
 Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 	Local $iIDFrom = BitAND($wParam, 0xFFFF) ; LoWord - this gives the control which sent the message
 	Local $iCode = BitShift($wParam, 16) ; HiWord - this gives the message that was sent
 	Switch $iCode
-		Case $GUI_EVENT_CLOSE
-			ConsoleWrite("CLOSE")
 		Case $EN_CHANGE ; If we have the correct message
 			Switch $iIDFrom ; See if it comes from one of the inputs
 				Case $aGUI[$idTxtKey]
@@ -304,13 +334,13 @@ Func AutoStart($bEnable = 1)
 	Else
 		If FileExists($sStartupLink) Then FileDelete($sStartupLink)
 	EndIf
-EndFunc
+EndFunc   ;==>AutoStart
 
 Func AutoStartIsEnabled()
 	Local $aShortcut = FileGetShortcut($sStartupLink)
 	If @error Then Return False
 	Return (FileExists($aShortcut[0])) ? True : False
-EndFunc
+EndFunc   ;==>AutoStartIsEnabled
 
 Func ClipboardClear()
 	ClipPut("")
@@ -319,6 +349,19 @@ EndFunc   ;==>ClipboardClear
 Func ClipboardCopyData($vData)
 	ClipPut($vData)
 EndFunc   ;==>ClipboardCopyData
+
+Func CloseToTrayIsEnabled()
+	RegRead($sRegKeyPath, "NoCloseToTray")
+	Return (@error <> 0) ? True : False
+EndFunc   ;==>CloseToTrayIsEnabled
+
+Func CloseToTraySetting($bEnable = 1)
+	If $bEnable Then
+		RegDelete($sRegKeyPath, "NoCloseToTray")
+	Else
+		RegWrite($sRegKeyPath, "NoCloseToTray", "REG_DWORD", 0)
+	EndIf
+EndFunc   ;==>CloseToTraySetting
 
 Func GeneratePassword()
 	$sKey = KeyGetValue()
@@ -469,6 +512,10 @@ EndFunc   ;==>RegistryKeyWriteBinary
 Func RegistryKeyRead()
 	Return RegRead($sRegKeyPath, "Key")
 EndFunc   ;==>RegistryKeyRead
+
+Func UpdatePassGen()
+	If AutoStartIsEnabled() And @ScriptFullPath <> $sProgramPath Then AutoStart(1)
+EndFunc   ;==>UpdatePassGen
 #EndRegion - Additonal Functions
 
 #Region - Internal Functions
