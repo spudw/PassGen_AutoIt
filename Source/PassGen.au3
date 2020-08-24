@@ -1,5 +1,6 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
+Const $sVersion = "1.2.1"
 #AutoIt3Wrapper_Res_FileVersion = 1.2.1
 #AutoIt3Wrapper_Res_ProductName = PassGen
 
@@ -84,7 +85,7 @@ Enum $hGUI = 1, $idMnuFile, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStar
 ReDim $aGUI[$iGUILast]
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGenTool", 508, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
+$aGUI[$hGUI] = GUICreate("PassGen v" & $sVersion, 508, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 $aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
 $aGUI[$idMnuFileQuit] = GUICtrlCreateMenuItem("&Quit", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
@@ -93,6 +94,8 @@ $aGUI[$idMnuOptionsAutoStart] = GUICtrlCreateMenuItem("&Automatic Start on Login
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptionsCloseToTray] = GUICtrlCreateMenuItem("&Enable Close to Tray", $aGUI[$idMnuOptions])
 GUICtrlSetOnEvent(-1, "GUIEvents")
+TrayCreateItem("PassGen v" & $sVersion)
+TrayCreateItem("")
 $aGUI[$idTrayOpen] = TrayCreateItem("Open")
 TrayItemSetOnEvent(-1, "TrayEvents")
 TrayCreateItem("")
