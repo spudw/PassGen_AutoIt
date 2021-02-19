@@ -1,15 +1,19 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "2.0.3"
+Const $sVersion = "2.0.4"
 
 #pragma compile(FileDescription, Password Generator Tool)
 #pragma compile(ProductName, PassGen)
-#pragma compile(ProductVersion, 2.0.3)
-#pragma compile(FileVersion, 2.0.3.0)
+#pragma compile(ProductVersion, 2.0.4)
+#pragma compile(FileVersion, 2.0.4.0)
 ;#AutoIt3Wrapper_Res_File_Add
 
 
 ; Version History
+;
+; Version 2.0.4 - 2021/02/19
+;		Bug Fixes
+;		[*] Tooltip not disappearing when cancel edit
 ;
 ; Version 2.0.3 - 2021/02/19
 ;		Minor Cosmetic Changes
@@ -1287,6 +1291,7 @@ Func KeyManager_Busy($bFlag = True)
 EndFunc   ;==>KeyManager_Busy
 
 Func KeyManager_Cancel()
+	ToolTip("")
 	If $g_iEditing Then
 		Switch $g_iEditing
 			Case 1
@@ -1397,6 +1402,7 @@ Func KeyManager_EditValue()
 	idKMBtnSave_Enable(False)
 	GUICtrlSendMsg($idTempEditCtrl, $EM_SETSEL, 0, -1)
 	HotKeyManager($e_HotKeyESC + $e_HotKeyEnter)
+	TempEditControlValidKeyValue()
 EndFunc   ;==>KeyManager_EditValue
 
 Func KeyManager_EditValueSave()
@@ -1427,6 +1433,7 @@ Func KeyManager_GetActive()
 EndFunc   ;==>KeyManager_GetActive
 
 Func KeyManager_Hide()
+	ToolTip("")
 	HotKeyManager()
 	If $bChangesMade Then $bChangesPending = True
 	UILock(False)
@@ -1647,22 +1654,22 @@ EndFunc   ;==>RegistryKeyWriteBinary
 
 Func TempEditControlValidKeyValue()
 	Local $sValue = GUICtrlRead($idTempEditCtrl)
+	Local $sMsg = ""
+	Local $aWinPos = WinGetPos($aKeyManagerGUI[$hKeyManagerGUI])
+	Local $aEditCtrlPos = ControlGetPos($aKeyManagerGUI[$hKMListView], "", $hTempEditCtrl)
 	$bIsKeyComplex = IsStringComplex($sValue, 8, 3, 0)
 	If Not $bIsKeyComplex Then
 		Local $iError = @error
-		Local $aWinPos = WinGetPos($aKeyManagerGUI[$hKeyManagerGUI])
-		Local $aEditCtrlPos = ControlGetPos($aKeyManagerGUI[$hKMListView], "", $hTempEditCtrl)
-		Local $sMsg = ""
 		Switch $iError
 			Case 1
 				$sMsg = "Key is too short." & @CRLF & @CRLF & "Must contain at least 8 characters."
 			Case 2
 				$sMsg = "Key does not meet complexity requirements." & @CRLF & @CRLF & "Must contain at least 3 of the 4 following requirements:" & @CRLF & "Uppercase, Lowercase, Number, Symbol."
 		EndSwitch
-		ToolTip($sMsg, ($aWinPos[0] + $aEditCtrlPos[0] + ($aEditCtrlPos[2] / 2) + 8), ($aWinPos[1] + $aEditCtrlPos[1] + ($aEditCtrlPos[3] / 2) + 50), "", 0, BitOR($TIP_BALLOON, $TIP_CENTER))
 	Else
-		ToolTip("")
+		$sMsg = "Press the Enter key to finish editing," & @CRLF & "or press the Esc key to cancel."
 	EndIf
+	ToolTip($sMsg, ($aWinPos[0] + $aEditCtrlPos[0] + ($aEditCtrlPos[2] / 2) + 8), ($aWinPos[1] + $aEditCtrlPos[1] + ($aEditCtrlPos[3] / 2) + 50), "", 0, BitOR($TIP_BALLOON, $TIP_CENTER))
 	Return $bIsKeyComplex
 EndFunc   ;==>TempEditControlValidKeyValue
 
@@ -1680,6 +1687,7 @@ Func UILock($bFlag = True)
 			idTxtPassword_SetData("")
 			idLblPassphraseMsg_SetMessage()
 			idLblPasswordMsg_SetMessage()
+			If idTxtPassphrase_Read() = $sEmptyPassphraseMsg Then idTxtPassphrase_SetData("")
 		Case False
 			If idTxtKey_Read() = "" Then Return 0
 			idBtnKey_Enabled()
@@ -1689,6 +1697,7 @@ Func UILock($bFlag = True)
 			idTxtKey_Visible()
 			idBtnPassphrase_Enabled(False)
 			idTxtPassphrase_OnChange()
+			If Not StringLen(idTxtPassphrase_Read()) Then idTxtPassphrase_SetData($sEmptyPassphraseMsg)
 	EndSwitch
 EndFunc   ;==>UILock
 
