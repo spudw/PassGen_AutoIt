@@ -1,15 +1,25 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "2.0.2"
+Const $sVersion = "2.0.3"
 
 #pragma compile(FileDescription, Password Generator Tool)
 #pragma compile(ProductName, PassGen)
-#pragma compile(ProductVersion, 2.0.2)
-#pragma compile(FileVersion, 2.0.2.0) ; The last parameter is optional.
-
+#pragma compile(ProductVersion, 2.0.3)
+#pragma compile(FileVersion, 2.0.3.0)
 ;#AutoIt3Wrapper_Res_File_Add
 
+
 ; Version History
+;
+; Version 2.0.3 - 2021/02/19
+;		Minor Cosmetic Changes
+;		[*] Changed GUI size and layout
+;			Spaced controls mor uniformly
+;		[*] Show Key button
+;			Toggled state text change
+;		[*] Passphrase field operation
+;			Greyed out Password field when no Password present
+;			"Type here" message with empty, non-focused Passphrase field
 ;
 ; Version 2.0.2 - 2021/02/18
 ;		Bug fixes & AutoUpdate function tweak
@@ -190,20 +200,20 @@ Enum Step *2 $e_HotKeyESC, $e_HotKeyDEL, $e_HotKeyEnter
 Global $aItemPos, $idTempEditCtrl, $hTempEditCtrl, $aCurrentListViewItem[2], $bChangesMade = False, $bChangesPending = False, $bListViewSortDirection = False, $g_iEditing = False
 Global $g_iCurCol = -1, $g_iSortDir = 1, $g_bSet = False, $g_iCol = -1
 Global $hTimer, $g_aKeyArchive, $g_bKeyManagerBusy = False
-Const $AUTOPURGETIME = 3 ;minutes
+Const $sEmptyPassphraseMsg = "Type Passphrase Here", $AUTOPURGETIME = 3 ;minutes
 #EndRegion - Includes and Variables
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGen v" & $sVersion, 508, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
+$aGUI[$hGUI] = GUICreate("PassGen v" & $sVersion, 510, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 $aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
 $aGUI[$idMnuFileKeyMgr] = GUICtrlCreateMenuItem("Open Key &Manager" & @TAB & "Ctrl + M", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
-GUICtrlCreateMenuItem("",$aGUI[$idMnuFile])
+GUICtrlCreateMenuItem("", $aGUI[$idMnuFile])
 $aGUI[$idMnuFileImport] = GUICtrlCreateMenuItem("&Import Key Archive" & @TAB & "Ctrl + I", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuFileExport] = GUICtrlCreateMenuItem("&Export Key Archive" & @TAB & "Ctrl + E", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
-GUICtrlCreateMenuItem("",$aGUI[$idMnuFile])
+GUICtrlCreateMenuItem("", $aGUI[$idMnuFile])
 $aGUI[$idMnuFileQuit] = GUICtrlCreateMenuItem("&Quit" & @TAB & "Ctrl + Q", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptions] = GUICtrlCreateMenu("&Options")
@@ -220,43 +230,43 @@ TrayItemSetState(-1, $TRAY_DEFAULT)
 TrayCreateItem("")
 $aGUI[$idTrayQuit] = TrayCreateItem("Quit")
 TrayItemSetOnEvent(-1, "TrayEvents")
-$aGUI[$idBtnRevealKey] = GUICtrlCreateCheckbox("&Show", 12, 12, 44, 28, BitOR($BS_PUSHLIKE, $BS_AUTOCHECKBOX))
+$aGUI[$idBtnRevealKey] = GUICtrlCreateCheckbox("&Show", 12, 10, 44, 34, BitOR($BS_PUSHLIKE, $BS_AUTOCHECKBOX))
 GUICtrlSetState(-1, $GUI_UNCHECKED)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idLblKey] = GUICtrlCreateLabel("Key:", 64, 18, 40, 20)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTUNDER)
-$aGUI[$idTxtKey] = GUICtrlCreateInput("", 104, 10, 330, 34, $ES_PASSWORD)
+$aGUI[$idTxtKey] = GUICtrlCreateInput("", 104, 10, 326, 34, $ES_PASSWORD)
 Const $ES_PASSWORDCHAR = GUICtrlSendMsg(-1, $EM_GETPASSWORDCHAR, 0, 0)
 GUICtrlSetState(-1, $GUI_DISABLE)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
 $aGUI[$idBtnKey] = GUICtrlCreateButton("Key &Mgr", 442, 10, 58, 34, $BS_DEFPUSHBUTTON)
 GUICtrlSetOnEvent(-1, "GUIEvents")
-$aGUI[$idLblPassphrase] = GUICtrlCreateLabel("Passphrase:", 16, 68, 100, 20)
+$aGUI[$idLblPassphrase] = GUICtrlCreateLabel("Passphrase:", 16, 86, 100, 20)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTUNDER)
-$aGUI[$idLblPassphraseUse] = GUICtrlCreateLabel("Send with Email", 15, 88, 100, 20)
+$aGUI[$idLblPassphraseUse] = GUICtrlCreateLabel("Send with Email", 15, 106, 100, 20)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 9, $FW_NORMAL, $GUI_FONTITALIC, "Times New Roman")
-$aGUI[$idTxtPassphrase] = GUICtrlCreateInput("", 104, 62, 330, 34)
+$aGUI[$idTxtPassphrase] = GUICtrlCreateInput("", 104, 80, 326, 34)
 GUICtrlSetState(-1, $GUI_FOCUS)
-GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-$aGUI[$idBtnPassphrase] = GUICtrlCreateButton("C&opy", 451, 62, 40, 34)
+idTxtPassphrase_SetStyle(1)
+$aGUI[$idBtnPassphrase] = GUICtrlCreateButton("C&opy", 442, 80, 58, 34)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 GUICtrlSetState(-1, $GUI_DISABLE)
-$aGUI[$idLblPassphraseMsg] = GUICtrlCreateLabel("", 104, 96, 330, 40, $SS_CENTER)
+$aGUI[$idLblPassphraseMsg] = GUICtrlCreateLabel("", 104, 114, 330, 40, $SS_CENTER)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTITALIC)
-$aGUI[$idLblPassword] = GUICtrlCreateLabel("Password:", 30, 148, 80, 20)
+$aGUI[$idLblPassword] = GUICtrlCreateLabel("Password:", 30, 156, 80, 20)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTUNDER)
-$aGUI[$idLblPasswordUse] = GUICtrlCreateLabel("Use to Encrypt", 24, 167, 100, 20)
+$aGUI[$idLblPasswordUse] = GUICtrlCreateLabel("Use to Encrypt", 24, 175, 100, 20)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 9, $FW_NORMAL, $GUI_FONTITALIC, "Times New Roman")
-$aGUI[$idTxtPassword] = GUICtrlCreateInput("", 104, 142, 330, 34, BitOR($ES_READONLY, $SS_CENTER, $ES_PASSWORD))
+$aGUI[$idTxtPassword] = GUICtrlCreateInput("", 104, 150, 326, 34, BitOR($ES_READONLY, $SS_CENTER, $ES_PASSWORD))
 idTxtPassword_Enable(False)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-$aGUI[$idBtnPassword] = GUICtrlCreateButton("Co&py", 451, 142, 40, 34)
+$aGUI[$idBtnPassword] = GUICtrlCreateButton("Co&py", 442, 150, 58, 34)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 GUICtrlSetState(-1, $GUI_DISABLE)
-$aGUI[$idLblPasswordMsg] = GUICtrlCreateLabel("", 104, 176, 330, 40, $SS_CENTER)
+$aGUI[$idLblPasswordMsg] = GUICtrlCreateLabel("", 104, 184, 330, 20, $SS_CENTER)
 GUICtrlSetColor(-1, $COLOR_RED)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTITALIC)
 
@@ -328,10 +338,7 @@ _LegacyKeyConvert()
 UILock()
 
 KeyReadFromReg(RegistryKeyGetCurrent())
-If idTxtKey_Read() Then
-	UILock(False)
-	idtxtPassphrase_Focus()
-EndIf
+If idTxtKey_Read() Then UILock(False)
 
 If AutoStartIsEnabled() Then GUICtrlSetState($aGUI[$idMnuOptionsAutoStart], $GUI_CHECKED)
 If CloseToTrayIsEnabled() Then GUICtrlSetState($aGUI[$idMnuOptionsCloseToTray], $GUI_CHECKED)
@@ -446,7 +453,6 @@ Func GUIHide()
 EndFunc   ;==>GUIHide
 
 Func GUIMinimize()
-	idtxtPassphrase_Focus()
 	KeyHide()
 	GUISetState(@SW_MINIMIZE)
 EndFunc   ;==>GUIMinimize
@@ -510,7 +516,7 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 				Case 0 ;WA_INACTIVE
 					KeyHide()
 					PasswordHide()
-				Case 1 to 2 ;WA_ACTIVE & WA_CLICKACTIVE
+				Case 1 To 2 ;WA_ACTIVE & WA_CLICKACTIVE
 					HotKeyManager()
 			EndSwitch
 		Case $aKeyManagerGUI[$hKeyManagerGUI]
@@ -520,7 +526,7 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 						If $g_iEditing Then KeyManager_DeleteTempEditControl()
 						KeyManager_Hide()
 					EndIf
-				Case 1 to 2 ;WA_ACTIVE & WA_CLICKACTIVE
+				Case 1 To 2 ;WA_ACTIVE & WA_CLICKACTIVE
 					HotKeyManager($e_HotKeyDEL + $e_HotKeyESC)
 			EndSwitch
 	EndSwitch
@@ -550,8 +556,6 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 	Switch $iCode
 		Case $EN_CHANGE ; If we have the correct message
 			Switch $iIDFrom ; See if it comes from one of the inputs
-;~ 				Case $aGUI[$idTxtKey]
-;~ 					Return idTxtKey_OnChange()
 				Case $aGUI[$idTxtPassphrase]
 					Return idTxtPassphrase_OnChange()
 				Case $idTempEditCtrl
@@ -560,11 +564,19 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 			EndSwitch
 		Case $EN_SETFOCUS
 			Switch $iIDFrom
+				Case $aGUI[$idTxtPassphrase]
+					idTxtPassphrase_SetStyle(0)
+					If idTxtPassphrase_Read() = $sEmptyPassphraseMsg Then idTxtPassphrase_SetData("")
 				Case $aGUI[$idTxtPassword]
 					Return PasswordShow()
 			EndSwitch
 		Case $EN_KILLFOCUS
 			Switch $iIDFrom
+				Case $aGUI[$idTxtPassphrase]
+					If Not StringLen(idTxtPassphrase_Read()) Then
+						idTxtPassphrase_SetStyle(1)
+						idTxtPassphrase_SetData($sEmptyPassphraseMsg)
+					EndIf
 				Case $aGUI[$idTxtPassword]
 					Return PasswordHide()
 				Case $idTempEditCtrl
@@ -639,14 +651,6 @@ Func idBtnKey_Focus()
 	GUICtrl_SetFocus($aGUI[$idBtnKey])
 EndFunc   ;==>idBtnKey_Focus
 
-Func idBtnKey_GetCaption()
-	Return GUICtrl_Read($aGUI[$idBtnKey])
-EndFunc   ;==>idBtnKey_GetCaption
-
-Func idBtnKey_SetCaption($sCaption)
-	GUICtrl_SetData($aGUI[$idBtnKey], $sCaption)
-EndFunc   ;==>idBtnKey_SetCaption
-
 Func idBtnPassphrase_Click()
 	ClipboardCopyData(GUICtrl_Read($aGUI[$idTxtPassphrase]))
 	idLblPasswordMsg_SetMessage()
@@ -670,16 +674,8 @@ Func idBtnPassword_Enabled($bFlag = True)
 EndFunc   ;==>idBtnPassword_Enabled
 
 Func idBtnRevealKey_AcceleratorOption($iFlag = 0)
-	GUICtrl_SetData($aGUI[$idBtnRevealKey], ($iFlag = 1) ? "Sho&w" : "&Show")
+	GUICtrl_SetData($aGUI[$idBtnRevealKey], ($iFlag = 1) ? "&Hide" : "&Show")
 EndFunc   ;==>idBtnRevealKey_AcceleratorOption
-
-Func idBtnRevealKey_Depressed($bFlag = True)
-	GUICtrl_SetChecked($aGUI[$idBtnRevealKey], $bFlag)
-EndFunc   ;==>idBtnRevealKey_Depressed
-
-Func idBtnRevealKey_Enabled($bFlag = True)
-	GUICtrl_Enable($aGUI[$idBtnRevealKey], $bFlag)
-EndFunc   ;==>idBtnRevealKey_Enabled
 
 Func idBtnRevealKey_Click()
 	Local $iState = GUICtrl_Read($aGUI[$idBtnRevealKey])
@@ -689,6 +685,14 @@ Func idBtnRevealKey_Click()
 		KeyShow()
 	EndIf
 EndFunc   ;==>idBtnRevealKey_Click
+
+Func idBtnRevealKey_Depressed($bFlag = True)
+	GUICtrl_SetChecked($aGUI[$idBtnRevealKey], $bFlag)
+EndFunc   ;==>idBtnRevealKey_Depressed
+
+Func idBtnRevealKey_Enabled($bFlag = True)
+	GUICtrl_Enable($aGUI[$idBtnRevealKey], $bFlag)
+EndFunc   ;==>idBtnRevealKey_Enabled
 
 Func idKMBtnSave_Enable($bFlag = True)
 	GUICtrl_Enable($aKeyManagerGUI[$idKMBtnSave], $bFlag)
@@ -736,10 +740,6 @@ Func idTxtKey_Enable($bFlag = True)
 	GUICtrl_Enable($aGUI[$idTxtKey], $bFlag)
 EndFunc   ;==>idTxtKey_Enable
 
-Func idTxtKey_Focus()
-	GUICtrl_SetFocus($aGUI[$idTxtKey])
-EndFunc   ;==>idTxtKey_Focus
-
 Func idTxtKey_IsEnabled()
 	Return (GUICtrl_GetState($aGUI[$idTxtKey], $GUI_ENABLE)) ? True : False
 EndFunc   ;==>idTxtKey_IsEnabled
@@ -764,25 +764,52 @@ Func idTxtPassphrase_Enable($bFlag = True)
 	GUICtrl_Enable($aGUI[$idTxtPassphrase], $bFlag)
 EndFunc   ;==>idTxtPassphrase_Enable
 
-Func idtxtPassphrase_Focus()
-	GUICtrl_SetFocus($aGUI[$idTxtPassphrase])
-EndFunc   ;==>idtxtPassphrase_Focus
-
 Func idTxtPassphrase_OnChange()
 	AutoPurgeTimer(False)
-	If PassphraseIsValid() Then
-		GUICtrl_Enable($aGUI[$idBtnPassphrase])
-		GUICtrl_Enable($aGUI[$idBtnPassword])
-		GeneratePassword()
+	If idTxtPassphrase_Read() <> $sEmptyPassphraseMsg Then
+		If PassphraseIsValid() Then
+			GUICtrl_Enable($aGUI[$idBtnPassphrase])
+			GUICtrl_Enable($aGUI[$idBtnPassword])
+			idTxtPassword_Enable()
+			GeneratePassword()
+		Else
+			GUICtrl_Enable($aGUI[$idBtnPassphrase], False)
+			GUICtrl_Enable($aGUI[$idBtnPassword], False)
+			idTxtPassword_Enable(False)
+		EndIf
 	Else
-		GUICtrl_Enable($aGUI[$idBtnPassphrase], False)
-		GUICtrl_Enable($aGUI[$idBtnPassword], False)
+		idTxtPassword_Enable(False)
 	EndIf
 EndFunc   ;==>idTxtPassphrase_OnChange
 
 Func idTxtPassphrase_Read()
 	Return GUICtrl_Read($aGUI[$idTxtPassphrase])
 EndFunc   ;==>idTxtPassphrase_Read
+
+Func idTxtPassphrase_SetData($sValue)
+	GUICtrl_SetData($aGUI[$idTxtPassphrase], $sValue)
+EndFunc   ;==>idTxtPassphrase_SetData
+
+Func idTxtPassphrase_SetStyle($iFlag = 0)
+	Local $idCtrl = $aGUI[$idTxtPassphrase]
+	Local $iFontAttr, $iColor, $iStyle, $iSize
+
+	Switch $iFlag
+		Case 0
+			$iFontAttr = Default
+			$iColor = 0x000000
+			$iStyle = $ES_LEFT
+			$iSize = 18
+		Case 1
+			$iFontAttr = $GUI_FONTITALIC
+			$iColor = 0xA0A0A0
+			$iStyle = $SS_CENTER
+			$iSize = 16
+	EndSwitch
+	GUICtrlSetFont($idCtrl, $iSize, $FW_BOLD, $iFontAttr, "Consolas")
+	GUICtrlSetColor($idCtrl, $iColor)
+	GUICtrlSetStyle($idCtrl, $iStyle)
+EndFunc   ;==>idTxtPassphrase_SetStyle
 
 Func idTxtPassword_Enable($bFlag = True)
 	GUICtrlSetBkColor($aGUI[$idTxtPassword], ($bFlag = True) ? 0xFFFFFF : 0xF0F0F0)
@@ -1185,8 +1212,8 @@ Func KeyArchiveImportRoutine()
 		Local $iCount = _GUICtrlListView_GetItemCount($hCtrl)
 		If $iCount > 1 Then
 			_GUICtrlListView_SortItems($hCtrl, 1)
-			Local $sFirstDate = idKMListView_GetItem(0,1 )
-			Local $sLastDate = idKMListView_GetItem($iCount-1, 1)
+			Local $sFirstDate = idKMListView_GetItem(0, 1)
+			Local $sLastDate = idKMListView_GetItem($iCount - 1, 1)
 			Local $iDateDiff = _DateDiff("D", $sFirstDate, $sLastDate)
 			If $iDateDiff >= 0 Then _GUICtrlListView_SortItems($hCtrl, 1)
 			idKMListView_CheckItem(0)
@@ -1220,6 +1247,7 @@ EndFunc   ;==>KeyGetValue
 
 Func KeyHide()
 	idBtnRevealKey_Depressed(False)
+	idBtnRevealKey_AcceleratorOption()
 	InputboxMask($aGUI[$idTxtKey])
 EndFunc   ;==>KeyHide
 
@@ -1436,7 +1464,6 @@ Func KeyManager_KeySetActive($iIndex)
 EndFunc   ;==>KeyManager_KeySetActive
 
 Func KeyManager_OpenGUI()
-;~ 	HotKeyManager($e_HotKeyDEL)
 	If $bChangesPending = True Then
 		$bChangesPending = False
 	Else
@@ -1558,6 +1585,7 @@ EndFunc   ;==>KeySaveToReg
 
 Func KeyShow()
 	idBtnRevealKey_Depressed()
+	idBtnRevealKey_AcceleratorOption(1)
 	InputboxMask($aGUI[$idTxtKey], False)
 EndFunc   ;==>KeyShow
 
@@ -1659,6 +1687,7 @@ Func UILock($bFlag = True)
 			idTxtPassphrase_Enable()
 			idTxtPassword_Enable()
 			idTxtKey_Visible()
+			idBtnPassphrase_Enabled(False)
 			idTxtPassphrase_OnChange()
 	EndSwitch
 EndFunc   ;==>UILock
