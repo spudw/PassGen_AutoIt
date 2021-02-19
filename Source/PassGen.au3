@@ -1,17 +1,23 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "2.0"
+Const $sVersion = "2.0.1"
 
 #pragma compile(FileDescription, Password Generator Tool)
 #pragma compile(ProductName, PassGen)
-#pragma compile(ProductVersion, 2.0)
-#pragma compile(FileVersion, 2.0.0.0) ; The last parameter is optional.
+#pragma compile(ProductVersion, 2.0.1)
+#pragma compile(FileVersion, 2.0.1.0) ; The last parameter is optional.
 
 ;#AutoIt3Wrapper_Res_File_Add
 
 ; Version History
 ;
-; Version 2.0 - 2021/02/11
+; Version 2.0.1 - 2021/02/17
+;		Minor Bug fixes & cosmetic changes/corrections
+;		[*] Changed Key Change Button text
+;		[+] Added File Menu options on main GUI
+;			Open Key Manager, Import, Export
+;
+; Version 2.0 - 2021/02/17
 ;		New Major Version - New Features & Code Cleanup
 ;		[+] Added dedicated Key Archive Manager UI
 ;			Change button on Main UI opens new Key Archive Manager (KM) UI
@@ -151,7 +157,7 @@ Const $EXPORTFILEENCRYPTEDHEADERLEN = BinaryLen($EXPORTFILEENCRYPTEDHEADER)
 Const $DATEFORMATBYTELEN = StringLen("YYYY/MM/DD")
 
 Dim $aGUI[1] = ["hwnd|id"]
-Enum $hGUI = 1, $idMnuFile, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idMnuOptionsCloseToTray, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idCmbKeyList, _
+Enum $hGUI = 1, $idMnuFile, $idMnuFileKeyMgr, $idMnuFileImport, $idMnuFileExport, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idMnuOptionsCloseToTray, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idCmbKeyList, _
 		$idDateKeyDatePicker, $idBtnKey, $idLblPassphrase, $idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, _
 		$idBtnPassword, $idLblPasswordMsg, $iGUILast
 ReDim $aGUI[$iGUILast]
@@ -174,6 +180,14 @@ Const $AUTOPURGETIME = 3 ;minutes
 #Region - UI Creation
 $aGUI[$hGUI] = GUICreate("PassGen v" & $sVersion, 508, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 $aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
+$aGUI[$idMnuFileKeyMgr] = GUICtrlCreateMenuItem("Open Key &Manager" & @TAB & "Ctrl + M", $aGUI[$idMnuFile])
+GUICtrlSetOnEvent(-1, "GUIEvents")
+GUICtrlCreateMenuItem("",$aGUI[$idMnuFile])
+$aGUI[$idMnuFileImport] = GUICtrlCreateMenuItem("&Import Key Archive" & @TAB & "Ctrl + I", $aGUI[$idMnuFile])
+GUICtrlSetOnEvent(-1, "GUIEvents")
+$aGUI[$idMnuFileExport] = GUICtrlCreateMenuItem("&Export Key Archive" & @TAB & "Ctrl + E", $aGUI[$idMnuFile])
+GUICtrlSetOnEvent(-1, "GUIEvents")
+GUICtrlCreateMenuItem("",$aGUI[$idMnuFile])
 $aGUI[$idMnuFileQuit] = GUICtrlCreateMenuItem("&Quit" & @TAB & "Ctrl + Q", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptions] = GUICtrlCreateMenu("&Options")
@@ -199,7 +213,7 @@ $aGUI[$idTxtKey] = GUICtrlCreateInput("", 104, 10, 330, 34, $ES_PASSWORD)
 Const $ES_PASSWORDCHAR = GUICtrlSendMsg(-1, $EM_GETPASSWORDCHAR, 0, 0)
 GUICtrlSetState(-1, $GUI_DISABLE)
 GUICtrlSetFont(-1, 18, $FW_BOLD, Default, "Consolas")
-$aGUI[$idBtnKey] = GUICtrlCreateButton("&Change", 442, 10, 58, 34, $BS_DEFPUSHBUTTON)
+$aGUI[$idBtnKey] = GUICtrlCreateButton("Key &Mgr", 442, 10, 58, 34, $BS_DEFPUSHBUTTON)
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idLblPassphrase] = GUICtrlCreateLabel("Passphrase:", 16, 68, 100, 20)
 GUICtrlSetFont(-1, 10, $FW_BOLD, $GUI_FONTUNDER)
@@ -237,7 +251,7 @@ GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUIEvents")
 GUISetOnEvent($GUI_EVENT_RESTORE, "GUIEvents")
 TraySetOnEvent($TRAY_EVENT_PRIMARYUP, "GUIShow")
 
-Local $aAccelKeys[][2] = [["^q", $aGUI[$idMnuFileQuit]]]
+Local $aAccelKeys[][2] = [["^m", $aGUI[$idMnuFileKeyMgr]], ["^i", $aGUI[$idMnuFileImport]], ["^e", $aGUI[$idMnuFileExport]], ["^q", $aGUI[$idMnuFileQuit]]]
 GUISetAccelerators($aAccelKeys)
 
 $aKeyManagerGUI[$hKeyManagerGUI] = GUICreate("Key Archive Manager", 318, 400, -1, -1, $WS_SIZEBOX)
@@ -384,6 +398,13 @@ Func GUIEvents()
 			GUIMinimize()
 		Case $GUI_EVENT_RESTORE
 			GUIRestore()
+		Case $aGUI[$idMnuFileKeyMgr]
+			KeyManager_OpenGUI()
+		Case $aGUI[$idMnuFileImport]
+			KeyManager_OpenGUI()
+			KeyArchiveImportRoutine()
+		Case $aGUI[$idMnuFileExport]
+			KeyArchiveExportRoutine()
 		Case $aGUI[$idMnuFileQuit]
 			_Exit()
 		Case $aGUI[$idMnuOptionsAutoStart]
@@ -937,7 +958,6 @@ Func KeyArchiveExportCanceled($sCustomMsg = "")
 	EndIf
 	$sCustomMsg &= "Export Canceled"
 	MsgBox(0, "", $sCustomMsg)
-	KeyManager_Show()
 	Return KeyManager_Busy(False)
 EndFunc   ;==>KeyArchiveExportCanceled
 
@@ -964,7 +984,7 @@ Func KeyArchiveExportRoutine()
 		EndIf
 	EndIf
 
-	Local $sPassGenExportFilePath = FileSaveDialog("PassGen Key Archive Export", @MyDocumentsDir & "\", "PassGen Key Archive Export(*.pge)", $FD_PROMPTOVERWRITE, "PassGenKeyArchive.pge")
+	Local $sPassGenExportFilePath = FileSaveDialog("PassGen Key Archive Export", @MyDocumentsDir & "\", "PassGen Key Archive (*.pge)", $FD_PROMPTOVERWRITE, "PassGenKeyArchive.pge")
 	If @error Then Return KeyArchiveExportCanceled()
 	Local $sPGEPassword = ""
 
@@ -997,7 +1017,6 @@ Func KeyArchiveExportRoutine()
 	_Crypt_DestroyKey($dEncryptionKey) ; Destroy the cryptographic key.
 	FileClose($hExportFile)
 	MsgBox(0, "Export Complete", "PassGen Key Archive exported successfully", 5)
-	KeyManager_Show()
 	KeyManager_Busy(False)
 EndFunc   ;==>KeyArchiveExportRoutine
 
@@ -1034,7 +1053,6 @@ Func KeyArchiveImportCanceled($sCustomMsg = "")
 	EndIf
 	$sCustomMsg &= "Import Canceled"
 	MsgBox(0, "", $sCustomMsg)
-	KeyManager_Show()
 	Return KeyManager_Busy(False)
 EndFunc   ;==>KeyArchiveImportCanceled
 
@@ -1089,7 +1107,7 @@ EndFunc   ;==>KeyArchiveImportFileValidate
 Func KeyArchiveImportRoutine()
 	HotKeyManager()
 	KeyManager_Busy()
-	Local $sPassGenExportFilePath = FileOpenDialog("PassGen Key Archive Export", @MyDocumentsDir & "\", "PassGen Key Archive Import(*.pge)", BitOR($FD_FILEMUSTEXIST, $FD_PATHMUSTEXIST))
+	Local $sPassGenExportFilePath = FileOpenDialog("PassGen Key Archive Import", @MyDocumentsDir & "\", "PassGen Key Archive (*.pge)", BitOR($FD_FILEMUSTEXIST, $FD_PATHMUSTEXIST))
 	If @error Then Return KeyArchiveImportCanceled()
 	If Not FileExists($sPassGenExportFilePath) Then Return KeyArchiveImportCanceled("Unable to locate PassGen export file")
 	$hExportFile = FileOpen($sPassGenExportFilePath, $FO_BINARY)
@@ -1230,7 +1248,7 @@ Func KeyManager_Close($sMsg = "Close", $bForce = False)
 		$iRet = MsgBox(BitOR($MB_YESNO, $MB_ICONWARNING, $MB_DEFBUTTON2), "Unsaved Changes", "You have unsaved changes." & _
 				@CRLF & "Any unsaved changes will be lost." & @CRLF & @CRLF & "Are you sure you want to " & $sMsg & "?")
 		If $iRet = $IDNO Then
-			Return KeyManager_Show()
+			Return KeyManager_Busy(False)
 		ElseIf $iRet = $IDYES Then
 			$bChangesMade = False
 			$bChangesPending = False
@@ -1312,7 +1330,7 @@ Func KeyManager_EditValue()
 EndFunc   ;==>KeyManager_EditValue
 
 Func KeyManager_EditValueSave()
-	KeyManager_Busy()
+	KeyManager_Busy(False)
 	HotKeyManager($e_HotKeyDEL)
 	Local $bValidKeyValue = TempEditControlValidKeyValue()
 	If Not $bValidKeyValue Then
