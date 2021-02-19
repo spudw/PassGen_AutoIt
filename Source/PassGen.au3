@@ -1,15 +1,31 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "2.0.1"
+Const $sVersion = "2.0.2"
 
 #pragma compile(FileDescription, Password Generator Tool)
 #pragma compile(ProductName, PassGen)
-#pragma compile(ProductVersion, 2.0.1)
-#pragma compile(FileVersion, 2.0.1.0) ; The last parameter is optional.
+#pragma compile(ProductVersion, 2.0.2)
+#pragma compile(FileVersion, 2.0.2.0) ; The last parameter is optional.
 
 ;#AutoIt3Wrapper_Res_File_Add
 
 ; Version History
+;
+; Version 2.0.2 - 2021/02/18
+;		Bug fixes & AutoUpdate function tweak
+;		[*] Import operation
+;			Select most recent dated Key as Active
+;		[*] HotKeyManager Issues
+;			KeyManager Activate
+;			Import operation
+;			Unsaved changed queue stacking
+;		[*] Empty Key Archive
+;			Export operation halt
+;			New Key doesn't register as change
+;		[*] PasswordIsValid
+;			Password cleared if Passphrase is cleared logic
+;		[*] AutoUpdate
+;			Added update message and re-execute from local path logic
 ;
 ; Version 2.0.1 - 2021/02/17
 ;		Minor Bug fixes & cosmetic changes/corrections
@@ -494,6 +510,8 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 				Case 0 ;WA_INACTIVE
 					KeyHide()
 					PasswordHide()
+				Case 1 to 2 ;WA_ACTIVE & WA_CLICKACTIVE
+					HotKeyManager()
 			EndSwitch
 		Case $aKeyManagerGUI[$hKeyManagerGUI]
 			Switch $iCode
@@ -502,6 +520,8 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 						If $g_iEditing Then KeyManager_DeleteTempEditControl()
 						KeyManager_Hide()
 					EndIf
+				Case 1 to 2 ;WA_ACTIVE & WA_CLICKACTIVE
+					HotKeyManager($e_HotKeyDEL + $e_HotKeyESC)
 			EndSwitch
 	EndSwitch
 EndFunc   ;==>WM_ACTIVATE
@@ -530,8 +550,8 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 	Switch $iCode
 		Case $EN_CHANGE ; If we have the correct message
 			Switch $iIDFrom ; See if it comes from one of the inputs
-				Case $aGUI[$idTxtKey]
-					Return idTxtKey_OnChange()
+;~ 				Case $aGUI[$idTxtKey]
+;~ 					Return idTxtKey_OnChange()
 				Case $aGUI[$idTxtPassphrase]
 					Return idTxtPassphrase_OnChange()
 				Case $idTempEditCtrl
@@ -806,6 +826,11 @@ Func AutoStart($bEnable = True)
 		Case True
 			FileCopy(@ScriptFullPath, $PROGRAMPATH, $FC_CREATEPATH + $FC_OVERWRITE)
 			FileCreateShortcut($PROGRAMPATH, $STARTUPLINK, "", "/silent")
+			If @ScriptFullPath <> $PROGRAMPATH Then
+				SplashTextOn("PassGen Updating...", "Please wait a few moments for" & @CRLF & "PassGen to update and restart", 400, 120)
+				ShellExecute($PROGRAMPATH)
+				_Exit()
+			EndIf
 		Case False
 			If FileExists($STARTUPLINK) Then Return FileDelete($STARTUPLINK)
 	EndSwitch
@@ -869,17 +894,15 @@ Func HotKeyManager($iHotKeys = 0)
 	HotKeySet("{ESC}")
 	HotKeySet("{DEL}")
 	HotKeySet("{ENTER}")
-	Select
-		Case BitAND($iHotKeys, $e_HotKeyDEL)
-			HotKeySet("{DEL}", "KeyManager_RemoveSelected")
-			ContinueCase
-		Case BitAND($iHotKeys, $e_HotKeyESC)
-			HotKeySet("{ESC}", "KeyManager_Cancel")
-			ContinueCase
-		Case BitAND($iHotKeys, $e_HotKeyEnter)
-			HotKeySet("{ENTER}", "KeyManager_Save")
-			ContinueCase
-	EndSelect
+	If BitAND($iHotKeys, $e_HotKeyDEL) = $e_HotKeyDEL Then
+		HotKeySet("{DEL}", "KeyManager_RemoveSelected")
+	EndIf
+	If BitAND($iHotKeys, $e_HotKeyESC) = $e_HotKeyESC Then
+		HotKeySet("{ESC}", "KeyManager_Cancel")
+	EndIf
+	If BitAND($iHotKeys, $e_HotKeyEnter) = $e_HotKeyEnter Then
+		HotKeySet("{ENTER}", "KeyManager_Save")
+	EndIf
 EndFunc   ;==>HotKeyManager
 
 Func InputboxMask($iCtrl, $bMask = True)
@@ -973,6 +996,7 @@ EndFunc   ;==>KeyArchiveExportKey
 Func KeyArchiveExportRoutine()
 	HotKeyManager()
 	KeyManager_Busy()
+	If Not _GUICtrlListView_GetItemCount($aKeyManagerGUI[$hKMListView]) Then Return KeyArchiveExportCanceled("Nothing to Export")
 	If $bChangesMade Then
 		$iRet = MsgBox(BitOR($MB_YESNO, $MB_ICONWARNING, $MB_DEFBUTTON2), "Unsaved Changes", "You have unsaved changes." & _
 				@CRLF & "Unsaved changes may not be exported." & @CRLF & @CRLF & "Do you want to continue with exporting?")
@@ -1139,16 +1163,17 @@ Func KeyArchiveImportRoutine()
 		Return KeyArchiveImportCanceled("Failed to decrypt PassGen Key Archive with the provided password")
 	EndIf
 	$hExportFile = 0
+	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
 	If KeyArchiveGetCount() Then
 		$iImportOverwrite = MsgBox(BitOR($MB_YESNOCANCEL, $MB_ICONQUESTION), "Import Key Archive", _
 				"Do you want to overwrite the existing Key Archive?" & @CRLF & @CRLF & "Yes = Overwrite, No = Append")
-		If $iImportOverwrite = $IDYES Then _GUICtrlListView_DeleteAllItems($aKeyManagerGUI[$hKMListView])
+		If $iImportOverwrite = $IDYES Then _GUICtrlListView_DeleteAllItems($hCtrl)
 		If $iImportOverwrite = $IDCANCEL Then
 			$dKeys = 0
 			Return KeyArchiveImportCanceled()
 		EndIf
 	EndIf
-	_GUICtrlListView_BeginUpdate($aKeyManagerGUI[$hKMListView])
+	_GUICtrlListView_BeginUpdate($hCtrl)
 	Local $aKeys = StringSplit(BinaryToString($dKeys), "|", $STR_NOCOUNT)
 	For $sKey In $aKeys
 		Local $sKeyGUID = _WinAPI_CreateGUID()
@@ -1156,9 +1181,21 @@ Func KeyArchiveImportRoutine()
 		Local $sValue = StringRight($sKey, StringLen($sKey) - $DATEFORMATBYTELEN)
 		KeyManager_AddKey($sKeyGUID, $sDate, $sValue)
 	Next
-	_GUICtrlListView_EndUpdate($aKeyManagerGUI[$hKMListView])
+	If KeyManager_GetActive() = -1 Then
+		Local $iCount = _GUICtrlListView_GetItemCount($hCtrl)
+		If $iCount > 1 Then
+			_GUICtrlListView_SortItems($hCtrl, 1)
+			Local $sFirstDate = idKMListView_GetItem(0,1 )
+			Local $sLastDate = idKMListView_GetItem($iCount-1, 1)
+			Local $iDateDiff = _DateDiff("D", $sFirstDate, $sLastDate)
+			If $iDateDiff >= 0 Then _GUICtrlListView_SortItems($hCtrl, 1)
+			idKMListView_CheckItem(0)
+		Else
+			idKMListView_CheckItem(0)
+		EndIf
+	EndIf
+	_GUICtrlListView_EndUpdate($hCtrl)
 	KeyArchiveClearFromMem()
-	If KeyManager_GetActive() = -1 Then idKMListView_CheckItem(0)
 	KeyManager_ChangeMade()
 	KeyManager_Busy(False)
 EndFunc   ;==>KeyArchiveImportRoutine
@@ -1204,12 +1241,17 @@ EndFunc   ;==>KeyManager_ActivatedItemPosition
 
 Func KeyManager_AddKey($sGUID = "", $sDate = _NowCalcDate(), $sValue = "New Key!", $bActive = False)
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
+	If $sGUID = "" Then
+		$sGUID = _WinAPI_CreateGUID()
+		KeyManager_ChangeMade()
+	EndIf
+	_GUICtrlListView_BeginUpdate($hCtrl)
 	Local $iNewItem = _GUICtrlListView_AddItem($hCtrl, "")
-	If $sGUID = "" Then $sGUID = _WinAPI_CreateGUID()
 	_GUICtrlListView_AddSubItem($hCtrl, $iNewItem, $sDate, 1)
 	_GUICtrlListView_AddSubItem($hCtrl, $iNewItem, $sValue, 2)
 	_GUICtrlListView_AddSubItem($hCtrl, $iNewItem, $sGUID, 3)
 	If $bActive Then _GUICtrlListView_SetItemChecked($hCtrl, $iNewItem)
+	_GUICtrlListView_EndUpdate($hCtrl)
 EndFunc   ;==>KeyManager_AddKey
 
 Func KeyManager_Busy($bFlag = True)
@@ -1217,7 +1259,6 @@ Func KeyManager_Busy($bFlag = True)
 EndFunc   ;==>KeyManager_Busy
 
 Func KeyManager_Cancel()
-	HotKeyManager($e_HotKeyDEL)
 	If $g_iEditing Then
 		Switch $g_iEditing
 			Case 1
@@ -1245,6 +1286,7 @@ Func KeyManager_Close($sMsg = "Close", $bForce = False)
 	Local $bQuit = False
 	If $bChangesMade And $bForce = False Then
 		KeyManager_Busy()
+		HotKeyManager()
 		$iRet = MsgBox(BitOR($MB_YESNO, $MB_ICONWARNING, $MB_DEFBUTTON2), "Unsaved Changes", "You have unsaved changes." & _
 				@CRLF & "Any unsaved changes will be lost." & @CRLF & @CRLF & "Are you sure you want to " & $sMsg & "?")
 		If $iRet = $IDNO Then
@@ -1394,7 +1436,7 @@ Func KeyManager_KeySetActive($iIndex)
 EndFunc   ;==>KeyManager_KeySetActive
 
 Func KeyManager_OpenGUI()
-	HotKeyManager($e_HotKeyDEL)
+;~ 	HotKeyManager($e_HotKeyDEL)
 	If $bChangesPending = True Then
 		$bChangesPending = False
 	Else
@@ -1528,6 +1570,7 @@ Func PassphraseGetValue()
 EndFunc   ;==>PassphraseGetValue
 
 Func PassphraseIsValid()
+	idTxtPassword_SetData("")
 	idLblPassphraseMsg_SetMessage()
 	idLblPasswordMsg_SetMessage()
 	Local $sPassphrase = PassphraseGetValue()
@@ -1537,7 +1580,6 @@ Func PassphraseIsValid()
 		Switch @error
 			Case 1
 				idLblPassphraseMsg_SetMessage("Passphrase is too short." & @CRLF & "Must contain at least 8 characters.")
-				idTxtPassword_SetData("")
 		EndSwitch
 	EndIf
 	If $bIsPassphraseComplex == -1 Then Return False
