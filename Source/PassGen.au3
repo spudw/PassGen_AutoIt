@@ -1,113 +1,148 @@
 #AutoIt3Wrapper_Icon = "Icon.ico"
 #AutoIt3Wrapper_Compression = 4
-Const $sVersion = "2.0.4"
+Const $VERSION = "2.0.5.3"
 
 #pragma compile(FileDescription, Password Generator Tool)
 #pragma compile(ProductName, PassGen)
-#pragma compile(ProductVersion, 2.0.4)
-#pragma compile(FileVersion, 2.0.4.0)
-;#AutoIt3Wrapper_Res_File_Add
+#pragma compile(ProductVersion, 2.0.5.3)
+#pragma compile(FileVersion, 2.0.5.3)
+#pragma compile(UPX, false)
 
+#Region - Version History
+#comments-start
 
-; Version History
-;
-; Version 2.0.4 - 2021/02/19
-;		Bug Fixes
-;		[*] Tooltip not disappearing when cancel edit
-;
-; Version 2.0.3 - 2021/02/19
-;		Minor Cosmetic Changes
-;		[*] Changed GUI size and layout
-;			Spaced controls mor uniformly
-;		[*] Show Key button
-;			Toggled state text change
-;		[*] Passphrase field operation
-;			Greyed out Password field when no Password present
-;			"Type here" message with empty, non-focused Passphrase field
-;
-; Version 2.0.2 - 2021/02/18
-;		Bug fixes & AutoUpdate function tweak
-;		[*] Import operation
-;			Select most recent dated Key as Active
-;		[*] HotKeyManager Issues
-;			KeyManager Activate
-;			Import operation
-;			Unsaved changed queue stacking
-;		[*] Empty Key Archive
-;			Export operation halt
-;			New Key doesn't register as change
-;		[*] PasswordIsValid
-;			Password cleared if Passphrase is cleared logic
-;		[*] AutoUpdate
-;			Added update message and re-execute from local path logic
-;
-; Version 2.0.1 - 2021/02/17
-;		Minor Bug fixes & cosmetic changes/corrections
-;		[*] Changed Key Change Button text
-;		[+] Added File Menu options on main GUI
-;			Open Key Manager, Import, Export
-;
-; Version 2.0 - 2021/02/17
-;		New Major Version - New Features & Code Cleanup
-;		[+] Added dedicated Key Archive Manager UI
-;			Change button on Main UI opens new Key Archive Manager (KM) UI
-;			KM is equipped with editable listview which enables electing an active key, key date and key values
-;			Basic UI functions included (Menubar, context menu, buttons) for performing key archive management functions (add keys, modify keys)
-;		[*] Migrated Key Archive functions from ver 1.3 into new Key Archive Manager
-;
-; Version 1.3 - 2021/01/25
-;		New Features & Misc Code Cleanup/Optimization
-;		[+] Added KeyArchive / KeyList mechanisms
-;			[+] Added Key Archive functions
-;				- Select, Add, Remove, Modify, Date-Change, Import, Export, Clear
-;			[*] Altered Key Change button - Integrated Key Archive management functions
-;				- Dynamic Context Menu with Key Archive management function controls
-;			[*] Changed Registry key storage logic to accommodate KeyArchive
-;		[*]Key and Password become masked on Window Focus Lost or Minimize
-;		[*] Tray Icon Hidden when Not Minimized to Tray
-;		[+] Added Auto Purge from Clipboard after timer
-;			[*] Periodically checks clipboard and clears copied password or passphrase from clipboard
-;			    and Copied to labels when clipboard no longer contains password or passphrase
-;		[+] Added Key Complexity Requirement
-;		[+] Added Legacy Key logic - to migrate RegKey from prior version.
-;
-; Version 1.2.1.1 - 2020/08/24
-;		Minor Tray Tweaks
-;		[*] Made system tray icon always shown
-;		[*] Minor Tray Menu changes
-;
-; Version 1.2.1 - 2020/08/24
-;		Functional Changes & Minor Code Cleanup
-;		[+] Restored Minimize button and added Taskbar Peek Preview GUI hide workaround
-;		[+] Added Close to Tray function option
-;		[*] Minor Code Cleanup
-;
-; Version 1.2 - 2020/08/21
-;		Code Cleanup & Feature Additions
-;		[*] Removed unnecessary code
-;		[+] Clear Clipboard on Exit
-;		[+] Added Menubar with functions
-;			File > Exit
-;			Options > Automatic Startup on Login
-;		[+] Added Tray Menu with functions
-;			Open, Quit
-;		[*] Changed Tray Icon behavior - Hide when GUI visible, Show when GUI hidden
-;		[*] Changed Tray Icon click behavior
-;			Single Left-Click restores GUI
-;			Single Right-Click open Tray Menu
-;		[-] Removed Minimize button
-;
-; Version 1.1 - 2020/08/20
-;		Feature Additions
-;		[+] Added Password Masking functionality
-;		[+] Added Minimize to Tray functionality
-;
-; Version 1.0.1 - 2020/02/25
-;		Minor Customization
-;		[*] Changed EXE Icom
-;
-; Version 1.0 - 2020/05/20
-;		Original Full Release
+Varsion 2.0.5.3 - 2021/07/07
+	Bug fix
+		Once again...Password not regerating after Key selection change and activation in Key Manager.
+		   Added idTxtPassphrase_OnChange on KeyManage_Close
+		Systray Context menu Open did no fully restore GUI
+
+Varsion 2.0.5.2 - 2021/07/07
+	Bug fix
+		Password not regerating after Key selection change and activation in Key Manager.
+
+Varsion 2.0.5.1 - 2021/06/14
+	Bug fix
+		idTxtPassphrase_OnChange being called in WM_ACTIVATE was crushing password generation if passphrase was populated
+
+Version 2.0.5 - 2021/06/07
+	Feature changes & Bug fix
+	[+] Key Masking in Key Manager
+		[+] Added View Menu and Show Keys Menu Item to Key Manager UI
+			Unchecked by default each time the Key Manager is displayed
+	[+] Added Key Manager Changes Tracking Array
+		Optimizes Saving operation
+	[+] Key Manager Colorization
+		Added colorized pending changes, utilizing Key Manager Changes Tracking Array
+	[*] Do not unmask Key on main GUI while using Key Manager
+	[*] Fixed bug with Esc hotkey not re-registering after Key Manager value changed
+	[+] Added Export Password confirmation - Enter export password twice
+	[*] Minor Change to AutoStart behaviour
+		Removed Restart and Update splash screen
+		Do not automatically relaunch (restart) local copy
+	[+] Added logic re-size KeyManager listview columns on populate
+	[+] Added Auto-Import (import password automation) if PassGen Export meets Auto-Import criteria
+
+Version 2.0.4 - 2021/02/19
+	Bug Fixes
+	[*] Tooltip not disappearing when cancel edit
+
+Version 2.0.3 - 2021/02/19
+	Minor Cosmetic Changes
+	[*] Changed GUI size and layout
+		Spaced controls more uniformly
+	[*] Show Key button
+		Toggled state text change
+	[*] Passphrase field operation
+		Greyed out Password field when no Password present
+		Type here message with empty, non-focused Passphrase field
+
+Version 2.0.2 - 2021/02/18
+	Bug fixes & AutoUpdate function tweak
+	[*] Import operation
+		Select most recent dated Key as Active
+	[*] HotKeyManager Issues
+		KeyManager Activate
+		Import operation
+		Unsaved changed queue stacking
+	[*] Empty Key Archive
+		Export operation halt
+		New Key doesn't register as change
+	[*] PasswordIsValid
+		Password cleared if Passphrase is cleared logic
+	[*] AutoUpdate
+		Added update message and re-execute from local path logic
+
+Version 2.0.1 - 2021/02/17
+	Minor Bug fixes & cosmetic changes/corrections
+	[*] Changed Key Change Button text
+	[+] Added File Menu options on main GUI
+		Open Key Manager, Import, Export
+
+Version 2.0 - 2021/02/17
+	New Major Version - New Features & Code Cleanup
+	[+] Added dedicated Key Archive Manager UI
+		Change button on Main UI opens new Key Archive Manager (KM) UI
+		KM is equipped with editable listview which enables electing an active key, key date and key values
+		Basic UI functions included (Menubar, context menu, buttons) for performing key archive management functions (add keys, modify keys)
+	[*] Migrated Key Archive functions from ver 1.3 into new Key Archive Manager
+
+Version 1.3 - 2021/01/25
+	New Features & Misc Code Cleanup/Optimization
+	[+] Added KeyArchive / KeyList mechanisms
+		[+] Added Key Archive functions
+			- Select, Add, Remove, Modify, Date-Change, Import, Export, Clear
+		[*] Altered Key Change button - Integrated Key Archive management functions
+			- Dynamic Context Menu with Key Archive management function controls
+		[*] Changed Registry key storage logic to accommodate KeyArchive
+	[*]Key and Password become masked on Window Focus Lost or Minimize
+	[*] Tray Icon Hidden when Not Minimized to Tray
+	[+] Added Auto Purge from Clipboard after timer
+		[*] Periodically checks clipboard and clears copied password or passphrase from clipboard
+		    and Copied to labels when clipboard no longer contains password or passphrase
+	[+] Added Key Complexity Requirement
+	[+] Added Legacy Key logic - to migrate RegKey from prior version.
+
+Version 1.2.1.1 - 2020/08/24
+	Minor Tray Tweaks
+	[*] Made system tray icon always shown
+	[*] Minor Tray Menu changes
+
+Version 1.2.1 - 2020/08/24
+	Functional Changes & Minor Code Cleanup
+	[+] Restored Minimize button and added Taskbar Peek Preview GUI hide workaround
+	[+] Added Close to Tray function option
+	[*] Minor Code Cleanup
+
+Version 1.2 - 2020/08/21
+	Code Cleanup & Feature Additions
+	[*] Removed unnecessary code
+	[+] Clear Clipboard on Exit
+	[+] Added Menubar with functions
+		File > Exit
+		Options > Automatic Startup on Login
+	[+] Added Tray Menu with functions
+		Open, Quit
+	[*] Changed Tray Icon behavior - Hide when GUI visible, Show when GUI hidden
+	[*] Changed Tray Icon click behavior
+		Single Left-Click restores GUI
+		Single Right-Click open Tray Menu
+		[-] Removed Minimize button
+
+Version 1.1 - 2020/08/20
+	Feature Additions
+	[+] Added Password Masking functionality
+	[+] Added Minimize to Tray functionality
+
+Version 1.0.1 - 2020/02/25
+	Minor Customization
+	[*] Changed EXE Icon
+
+Version 1.0 - 2020/05/20
+	Original Full Release
+
+#comments-end
+#EndRegion - Version History
 
 #Region - Includes and Variables
 #include <Array.au3>
@@ -150,6 +185,7 @@ Opt("TrayMenuMode", 1 + 2) ; no default menu & items will not automatically chec
 Opt("TrayOnEventMode", 1) ;enable
 TraySetClick(8)
 
+Const $TITLE = "PassGen"
 Const $CHARACTERLIST = "ABCEFGHKLMNPQRSTUVWXYZ0987654321abdefghjmnqrtuwy"
 Const $CHARACTERLISTLEN = StringLen($CHARACTERLIST)
 Const $REGKEYPATH = "HKCU\Software\PassGen"
@@ -160,8 +196,6 @@ Const $PROGRAMPATH = @ProgramsDir & "\PassGen\PassGen.exe"
 Const $tagDATA_BLOB = "DWORD cbData;ptr pbData;"
 Const $tagCRYPTPROTECT_PROMPTSTRUCT = "DWORD cbSize;DWORD dwPromptFlags;HWND hwndApp;ptr szPrompt;"
 
-Enum $KEYARCHIVEACTION_SELECT = 1000, $KEYARCHIVEACTION_ADD, $KEYARCHIVEACTION_REMOVE, $KEYARCHIVEACTION_MODIFY, $KEYARCHIVEACTION_DATECHANGE, _
-		$KEYARCHIVEACTION_IMPORT, $KEYARCHIVEACTION_EXPORT, $KEYARCHIVEACTION_CLEAR
 Enum Step *2 $COMPLEXITY_UPPER, $COMPLEXITY_LOWER, $COMPLEXITY_NUMBER, $COMPLEXITY_SYMBOL
 
 Const $BINARYFORMAT_SOH = Binary("0x01")
@@ -187,14 +221,14 @@ Const $EXPORTFILEENCRYPTEDHEADERLEN = BinaryLen($EXPORTFILEENCRYPTEDHEADER)
 Const $DATEFORMATBYTELEN = StringLen("YYYY/MM/DD")
 
 Dim $aGUI[1] = ["hwnd|id"]
-Enum $hGUI = 1, $idMnuFile, $idMnuFileKeyMgr, $idMnuFileImport, $idMnuFileExport, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idMnuOptionsCloseToTray, $idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idCmbKeyList, _
-		$idDateKeyDatePicker, $idBtnKey, $idLblPassphrase, $idLblPassphraseUse, $idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, _
-		$idBtnPassword, $idLblPasswordMsg, $iGUILast
+Enum $hGUI = 1, $idMnuFile, $idMnuFileKeyMgr, $idMnuFileImport, $idMnuFileExport, $idMnuFileQuit, $idMnuOptions, $idMnuOptionsAutoStart, $idMnuOptionsCloseToTray, _
+		$idTrayOpen, $idTrayQuit, $idBtnRevealKey, $idLblKey, $idTxtKey, $idCmbKeyList, $idDateKeyDatePicker, $idBtnKey, $idLblPassphrase, $idLblPassphraseUse, _
+		$idTxtPassphrase, $idBtnPassphrase, $idLblPassphraseMsg, $idLblPassword, $idLblPasswordUse, $idTxtPassword, $idBtnPassword, $idLblPasswordMsg, $iGUILast
 ReDim $aGUI[$iGUILast]
 
 Dim $aKeyManagerGUI[1] = ["hwnd|id"]
 Enum $hKeyManagerGUI = 1, $idKMMnuFile, $idKMMnuFileNew, $idKMMnuFileExport, $idKMMnuFileImport, $idKMMnuFileClose, _
-		$idKMMnuEdit, $idKMMnuEditRemove, $idKMMnuEditSelectAll, $idKMMnuEditDeselectAll, _
+		$idKMMnuEdit, $idKMMnuEditRemove, $idKMMnuEditSelectAll, $idKMMnuEditDeselectAll, $idKMMnuView, $idKMMnuViewShow, _
 		$idKMListView, $hKMListView, $idKMBtnCancel, $idKMBtnSave, $idKMListViewDummy, $iKeyManagerGUILast
 ReDim $aKeyManagerGUI[$iKeyManagerGUILast]
 
@@ -203,12 +237,13 @@ Enum Step *2 $e_HotKeyESC, $e_HotKeyDEL, $e_HotKeyEnter
 
 Global $aItemPos, $idTempEditCtrl, $hTempEditCtrl, $aCurrentListViewItem[2], $bChangesMade = False, $bChangesPending = False, $bListViewSortDirection = False, $g_iEditing = False
 Global $g_iCurCol = -1, $g_iSortDir = 1, $g_bSet = False, $g_iCol = -1
-Global $hTimer, $g_aKeyArchive, $g_bKeyManagerBusy = False
-Const $sEmptyPassphraseMsg = "Type Passphrase Here", $AUTOPURGETIME = 3 ;minutes
+Global $hTimer, $g_aKeyArchive, $g_aKeyMgrChanges, $g_bKeyManagerBusy = False
+Const $sEmptyPassphraseMsg = "Type Passphrase Here", $sHiddenPassword = "●●●●●●●●●●●●●●●●", $AUTOPURGETIME = 3 ;minutes
+Const $CHANGEDVALUECOLOR = 0xFF0000
 #EndRegion - Includes and Variables
 
 #Region - UI Creation
-$aGUI[$hGUI] = GUICreate("PassGen v" & $sVersion, 510, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
+$aGUI[$hGUI] = GUICreate($TITLE & " v" & $VERSION, 510, 230, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 $aGUI[$idMnuFile] = GUICtrlCreateMenu("&File")
 $aGUI[$idMnuFileKeyMgr] = GUICtrlCreateMenuItem("Open Key &Manager" & @TAB & "Ctrl + M", $aGUI[$idMnuFile])
 GUICtrlSetOnEvent(-1, "GUIEvents")
@@ -225,7 +260,7 @@ $aGUI[$idMnuOptionsAutoStart] = GUICtrlCreateMenuItem("&Automatic Start on Login
 GUICtrlSetOnEvent(-1, "GUIEvents")
 $aGUI[$idMnuOptionsCloseToTray] = GUICtrlCreateMenuItem("&Enable Close to Tray", $aGUI[$idMnuOptions])
 GUICtrlSetOnEvent(-1, "GUIEvents")
-TrayCreateItem("PassGen v" & $sVersion)
+TrayCreateItem("PassGen v" & $VERSION)
 TrayItemSetState(-1, $TRAY_DISABLE)
 TrayCreateItem("")
 $aGUI[$idTrayOpen] = TrayCreateItem("Open")
@@ -284,8 +319,7 @@ TraySetOnEvent($TRAY_EVENT_PRIMARYUP, "GUIShow")
 Local $aAccelKeys[][2] = [["^m", $aGUI[$idMnuFileKeyMgr]], ["^i", $aGUI[$idMnuFileImport]], ["^e", $aGUI[$idMnuFileExport]], ["^q", $aGUI[$idMnuFileQuit]]]
 GUISetAccelerators($aAccelKeys)
 
-$aKeyManagerGUI[$hKeyManagerGUI] = GUICreate("Key Archive Manager", 318, 400, -1, -1, $WS_SIZEBOX)
-
+$aKeyManagerGUI[$hKeyManagerGUI] = GUICreate("Key Archive Manager", 318, 400, -1, -1, BitOR($WS_SIZEBOX, $DS_SETFOREGROUND))
 $aKeyManagerGUI[$idKMMnuFile] = GUICtrlCreateMenu("&File")
 $aKeyManagerGUI[$idKMMnuFileNew] = GUICtrlCreateMenuItem("Add &New Key" & @TAB & "Ctrl + N", $aKeyManagerGUI[$idKMMnuFile])
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
@@ -295,7 +329,7 @@ GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 $aKeyManagerGUI[$idKMMnuFileExport] = GUICtrlCreateMenuItem("&Export Key Archive" & @TAB & "Ctrl + E", $aKeyManagerGUI[$idKMMnuFile])
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 GUICtrlCreateMenuItem("", $aKeyManagerGUI[$idKMMnuFile])
-$aKeyManagerGUI[$idKMMnuFileClose] = GUICtrlCreateMenuItem("&Close" & @TAB & "Ctrl + C", $aKeyManagerGUI[$idKMMnuFile])
+$aKeyManagerGUI[$idKMMnuFileClose] = GUICtrlCreateMenuItem("&Close" & @TAB & "Ctrl + X", $aKeyManagerGUI[$idKMMnuFile])
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 $aKeyManagerGUI[$idKMMnuEdit] = GUICtrlCreateMenu("&Edit")
 $aKeyManagerGUI[$idKMMnuEditRemove] = GUICtrlCreateMenuItem("&Remove Selected Key(s)" & @TAB & "DEL", $aKeyManagerGUI[$idKMMnuEdit])
@@ -305,13 +339,12 @@ $aKeyManagerGUI[$idKMMnuEditSelectAll] = GUICtrlCreateMenuItem("Select &All" & @
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 $aKeyManagerGUI[$idKMMnuEditDeselectAll] = GUICtrlCreateMenuItem("&Deselect All" & @TAB & "Ctrl + D", $aKeyManagerGUI[$idKMMnuEdit])
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
+$aKeyManagerGUI[$idKMMnuView] = GUICtrlCreateMenu("&View")
+$aKeyManagerGUI[$idKMMnuViewShow] = GUICtrlCreateMenuItem("&Show Keys" & @TAB & "Ctrl + S", $aKeyManagerGUI[$idKMMnuView])
+GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 $aKeyManagerGUI[$idKMListView] = GUICtrlCreateListView("Active|Key Date|Key Value|GUID", 4, 4, 308, 310, BitOR($LVS_SORTDESCENDING, $WS_BORDER, $LVS_SHOWSELALWAYS), BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT))
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
 GUICtrlSetResizing(-1, $GUI_DOCKBORDERS)
-GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 0, 50)
-GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 1, 100)
-GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 2, 158)
-GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 3, 0)
 $aKeyManagerGUI[$hKMListView] = GUICtrlGetHandle($aKeyManagerGUI[$idKMListView])
 $aKeyManagerGUI[$idKMListViewDummy] = GUICtrlCreateDummy()
 GUICtrlSetOnEvent(-1, "KeyManager_GUIEvents")
@@ -328,7 +361,7 @@ GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_GETMINMAXINFO, "WM_GETMINMAXINFO")
 GUISetOnEvent($GUI_EVENT_CLOSE, "KeyManager_GUIEvents")
 
-Local $aAccelKeys[][2] = [["^n", $aKeyManagerGUI[$idKMMnuFileNew]], ["^i", $aKeyManagerGUI[$idKMMnuFileImport]], ["^e", $aKeyManagerGUI[$idKMMnuFileExport]], ["^c", $aKeyManagerGUI[$idKMMnuFileClose]], ["^a", $aKeyManagerGUI[$idKMMnuEditSelectAll]], ["^d", $aKeyManagerGUI[$idKMMnuEditDeselectAll]]]
+Local $aAccelKeys[][2] = [["^n", $aKeyManagerGUI[$idKMMnuFileNew]], ["^i", $aKeyManagerGUI[$idKMMnuFileImport]], ["^e", $aKeyManagerGUI[$idKMMnuFileExport]], ["^x", $aKeyManagerGUI[$idKMMnuFileClose]], ["^a", $aKeyManagerGUI[$idKMMnuEditSelectAll]], ["^d", $aKeyManagerGUI[$idKMMnuEditDeselectAll]], ["^s", $aKeyManagerGUI[$idKMMnuViewShow]]]
 GUISetAccelerators($aAccelKeys)
 #EndRegion - UI Creation
 
@@ -363,16 +396,21 @@ Func _Exit()
 	If $bChangesMade Then
 		If Not KeyManager_Close("Quit") Then Return 0
 	EndIf
+	ClipboardClear()
 	_GUICtrlListView_UnRegisterSortCallBack($aKeyManagerGUI[$hKMListView])
 	_Crypt_Shutdown()
 	$hTimer = 0
-	ClipboardClear()
 	Exit
 EndFunc   ;==>_Exit
 
 Func GUICtrl_Enable($iCtrl, $bFlag = True)
 	Return GUICtrl_SetState($iCtrl, $bFlag, $GUI_ENABLE, $GUI_DISABLE)
 EndFunc   ;==>GUICtrl_Enable
+
+Func GUICtrl_GetChecked($iCtrl)
+	Local $iState = GUICtrl_Read($iCtrl)
+	Return (BitAND($iState, $GUI_CHECKED) ? True : False)
+EndFunc   ;==>GUICtrl_GetChecked
 
 Func GUICtrl_GetState($iCtrl, $iState)
 	Return BitAND(GUICtrlGetState($iCtrl), $iState)
@@ -466,10 +504,10 @@ Func GUIRestore()
 EndFunc   ;==>GUIRestore
 
 Func GUIShow()
-	GUIRestore()
 	TraySetState($TRAY_ICONSTATE_HIDE)
 	GUISetState(@SW_ENABLE, $aGUI[$hGUI])
 	GUISetState(@SW_SHOW, $aGUI[$hGUI])
+	GUIRestore()
 	WinActivate($aGUI[$hGUI])
 EndFunc   ;==>GUIShow
 
@@ -499,6 +537,8 @@ Func KeyManager_GUIEvents()
 			KeyArchiveImportRoutine()
 		Case $aKeyManagerGUI[$idKMMnuFileExport]
 			KeyArchiveExportRoutine()
+		Case $aKeyManagerGUI[$idKMMnuViewShow]
+			KeyManager_ShowKeysToggle()
 	EndSwitch
 EndFunc   ;==>KeyManager_GUIEvents
 
@@ -520,18 +560,30 @@ Func WM_ACTIVATE($hWnd, $iMsg, $wParam, $lParam)
 				Case 0 ;WA_INACTIVE
 					KeyHide()
 					PasswordHide()
+					ToolTip("")
+					HotKeyManager()
 				Case 1 To 2 ;WA_ACTIVE & WA_CLICKACTIVE
 					HotKeyManager()
 			EndSwitch
 		Case $aKeyManagerGUI[$hKeyManagerGUI]
 			Switch $iCode
 				Case 0 ;WA_INACTIVE
-					If Not $g_bKeyManagerBusy Then
+					If Not KeyManager_IsBusy() Then
 						If $g_iEditing Then KeyManager_DeleteTempEditControl()
-						KeyManager_Hide()
+						KeyManager_ShowKeys(False)
+						GUICtrl_SetChecked($aKeyManagerGUI[$idKMMnuViewShow], False)
+						ToolTip("")
+						HotKeyManager()
 					EndIf
 				Case 1 To 2 ;WA_ACTIVE & WA_CLICKACTIVE
-					HotKeyManager($e_HotKeyDEL + $e_HotKeyESC)
+					If ClipboardContainsPass() Then ClipboardClear()
+					idBtnPassphrase_Enabled(False)
+					idBtnPassword_Enabled(False)
+					idTxtPassword_Enable(False)
+					idTxtPassword_SetData("")
+					idLblPassphraseMsg_SetMessage()
+					idLblPasswordMsg_SetMessage()
+					HotKeyManager($e_HotKeyDEL)
 			EndSwitch
 	EndSwitch
 EndFunc   ;==>WM_ACTIVATE
@@ -607,6 +659,35 @@ Func WM_NOTIFY($hWnd, $Msg, $wParam, $lParam)
 	$hWndFrom = HWnd(DllStructGetData($tNMHDR, "HwndFrom"))
 	$iCode = DllStructGetData($tNMHDR, "Code")
 
+	If $iCode = -12 Then ; $NM_CUSTOMDRAW
+		Local $tNMLVCUSTOMDRAW = DllStructCreate($tagNMLVCUSTOMDRAW, $lParam)
+		$dwDrawStage = DllStructGetData($tNMLVCUSTOMDRAW, "dwDrawStage")
+		Switch $dwDrawStage ; Holds a value that specifies the drawing stage
+			Case 1 ; $CDDS_PREPAINT
+				; Before the paint cycle begins
+				Return 32 ; $CDRF_NOTIFYITEMDRAW - Notify the parent window of any item-related drawing operations
+
+			Case 65537 ; $CDDS_ITEMPREPAINT
+				; Before painting an item
+				Return 32 ; $CDRF_NOTIFYSUBITEMDRAW - Notify the parent window of any subitem-related drawing operations
+
+			Case 196609 ; BitOR($CDDS_ITEMPREPAINT, $CDDS_SUBITEM)
+				If Not IsArray($g_aKeyMgrChanges) Then Return 2
+				$iItem = DllStructGetData($tNMLVCUSTOMDRAW, "dwItemSpec") ; Row index
+				Local $iSubItem = DllStructGetData($tNMLVCUSTOMDRAW, "iSubItem") ; Column index
+				If $hWndFrom == GUICtrlGetHandle($aKeyManagerGUI[$idKMListView]) Then
+					If $iItem <= UBound($g_aKeyMgrChanges) - 1 And $iSubItem <= UBound($g_aKeyMgrChanges, 2) - 1 Then
+						If $g_aKeyMgrChanges[$iItem][$iSubItem] == True Then
+							DllStructSetData($tNMLVCUSTOMDRAW, "ClrText", $CHANGEDVALUECOLOR)
+						Else
+							DllStructSetData($tNMLVCUSTOMDRAW, "ClrText", 0x000000)
+						EndIf
+					EndIf
+				EndIf
+				Return 2 ; $CDRF_NEWFONT must be returned after changing font or colors
+		EndSwitch
+	EndIf
+
 	Switch $hWndFrom
 		Case $hTempEditCtrl
 			Switch $iCode
@@ -625,6 +706,9 @@ Func WM_NOTIFY($hWnd, $Msg, $wParam, $lParam)
 					If $iSubItem == 0 Then
 						KeyManager_ActivatedItem($iItem, $iSubItem)
 						GUICtrlSendToDummy($aKeyManagerGUI[$idKMListViewDummy])
+						_GUICtrlListView_SetSelectedColumn($hWndFrom, -1)
+					Else
+						_GUICtrlListView_SetSelectedColumn($hWndFrom, $iSubItem)
 					EndIf
 				Case $NM_RCLICK
 					KeyManager_ActivatedItem($iItem, $iSubItem)
@@ -667,6 +751,7 @@ Func idBtnPassphrase_Enabled($bFlag = True)
 EndFunc   ;==>idBtnPassphrase_Enabled
 
 Func idBtnPassword_Click()
+	ClipboardClear()
 	ClipboardCopyData(GUICtrl_Read($aGUI[$idTxtPassword]))
 	idLblPassphraseMsg_SetMessage()
 	idLblPasswordMsg_SetMessage("Copied to Clipboard")
@@ -857,11 +942,6 @@ Func AutoStart($bEnable = True)
 		Case True
 			FileCopy(@ScriptFullPath, $PROGRAMPATH, $FC_CREATEPATH + $FC_OVERWRITE)
 			FileCreateShortcut($PROGRAMPATH, $STARTUPLINK, "", "/silent")
-			If @ScriptFullPath <> $PROGRAMPATH Then
-				SplashTextOn("PassGen Updating...", "Please wait a few moments for" & @CRLF & "PassGen to update and restart", 400, 120)
-				ShellExecute($PROGRAMPATH)
-				_Exit()
-			EndIf
 		Case False
 			If FileExists($STARTUPLINK) Then Return FileDelete($STARTUPLINK)
 	EndSwitch
@@ -1026,6 +1106,7 @@ EndFunc   ;==>KeyArchiveExportKey
 
 Func KeyArchiveExportRoutine()
 	HotKeyManager()
+	KeyManager_OpenGUI()
 	KeyManager_Busy()
 	If Not _GUICtrlListView_GetItemCount($aKeyManagerGUI[$hKMListView]) Then Return KeyArchiveExportCanceled("Nothing to Export")
 	If $bChangesMade Then
@@ -1051,7 +1132,12 @@ Func KeyArchiveExportRoutine()
 		EndIf
 		Local $bPasswordIsValid = IsStringComplex($sPGEPassword, 8, 3, 0)
 		If Not $bPasswordIsValid Then MsgBox(BitOR($MB_ICONERROR, $MB_TASKMODAL), "Password Error", "Password does not meet complexity requirements.")
-	Until $bPasswordIsValid
+
+		$sPasswordConfirmation = InputBox("Confirm Export Password", "Re-enter the same password to confirm it was typed correctly.")
+		Local $bPasswordConfirmed = False
+		If $sPasswordConfirmation == $sPGEPassword Then $bPasswordConfirmed = True
+		If Not $bPasswordConfirmed Then MsgBox(BitOR($MB_ICONERROR, $MB_TASKMODAL), "Password Mismatch", "Re-entered password does not match.")
+	Until $bPasswordIsValid And $bPasswordConfirmed
 
 	$sBIN = $EXPORTFILEHEADER
 
@@ -1166,39 +1252,55 @@ Func KeyArchiveImportRoutine()
 	If @error Then Return KeyArchiveImportCanceled()
 	If Not FileExists($sPassGenExportFilePath) Then Return KeyArchiveImportCanceled("Unable to locate PassGen export file")
 	$hExportFile = FileOpen($sPassGenExportFilePath, $FO_BINARY)
-	$dExportFileData = FileRead($hExportFile)
+	$dExportFileContents = FileRead($hExportFile)
 	FileClose($hExportFile)
 
-	$bExportEncryptedFileHeaderValid = _BinaryCheckEncryptedFileHeader($dExportFileData, 1, $EXPORTFILEENCRYPTEDHEADERLEN, $EXPORTFILEENCRYPTEDHEADER)
+	$bExportEncryptedFileHeaderValid = _BinaryCheckEncryptedFileHeader($dExportFileContents, 1, $EXPORTFILEENCRYPTEDHEADERLEN, $EXPORTFILEENCRYPTEDHEADER)
 	If Not $bExportEncryptedFileHeaderValid Then
 		Return KeyArchiveImportCanceled("File does not appear to be a valid PassGen Key Archive Export")
 	EndIf
 
-	Local $sPGEPassword = InputBox("Enter Export Password", "Enter the password that was originally to protect the key archive export.")
-	Local $dDecryptionKey = _Crypt_DeriveKey(StringToBinary($sPGEPassword), $CALG_AES_256)
-	$sPGEPassword = ""
-	If @error Then Return KeyArchiveImportCanceled("An unexpected error occured while preparing the Decryption key")
+	Local $dAutoImportKey = _Crypt_DeriveKey(StringToBinary($TITLE & StringLeft(FileGetTime($sPassGenExportFilePath, $FT_MODIFIED, $FT_STRING),12)), $CALG_AES_256)
+	$dExportFileData = _BinaryExtract($dExportFileContents, $EXPORTFILEENCRYPTEDHEADERLEN + 1, BinaryLen($dExportFileContents) - $EXPORTFILEENCRYPTEDHEADERLEN)
+	$dExportFileData = _Crypt_DecryptData($dExportFileData, $dAutoImportKey, $CALG_USERKEY)
+	_Crypt_DestroyKey($dAutoImportKey); Destroy the cryptographic key.
+	Local $bExportFileValid = KeyArchiveImportFileValidate($dExportFileData)
 
-	$dExportFileData = _BinaryExtract($dExportFileData, $EXPORTFILEENCRYPTEDHEADERLEN + 1, BinaryLen($dExportFileData) - $EXPORTFILEENCRYPTEDHEADERLEN)
+	If Not $bExportFileValid Then
+		Local $sPGEPassword = InputBox("Enter Export Password", "Enter the password that was originally to protect the key archive export.")
+		Local $dDecryptionKey = _Crypt_DeriveKey(StringToBinary($sPGEPassword), $CALG_AES_256)
+		$sPGEPassword = ""
+		If @error Then Return KeyArchiveImportCanceled("An unexpected error occured while preparing the Decryption key")
+		$dExportFileData = _BinaryExtract($dExportFileContents, $EXPORTFILEENCRYPTEDHEADERLEN + 1, BinaryLen($dExportFileData) - $EXPORTFILEENCRYPTEDHEADERLEN)
+		$dExportFileData = _Crypt_DecryptData($dExportFileData, $dDecryptionKey, $CALG_USERKEY)
+		_Crypt_DestroyKey($dDecryptionKey); Destroy the cryptographic key.
 
-	$dExportFileData = _Crypt_DecryptData($dExportFileData, $dDecryptionKey, $CALG_USERKEY)
-	_Crypt_DestroyKey($dDecryptionKey) ; Destroy the cryptographic key.
+		$bExportFileValid = KeyArchiveImportFileValidate($dExportFileData)
+	EndIf
 
-	$bExportFileValid = KeyArchiveImportFileValidate($dExportFileData)
+	$hExportFile = 0
+	$dExportFileContents = 0
+
 	If $bExportFileValid Then
 		$dKeys = KeyArchiveImportFileParse($dExportFileData)
-		If @error Then KeyArchiveImportCanceled("An unexpected error occured while processing the PassGen Key Archive")
+		If @error Then
+			$dExportFileData = 0
+			Return KeyArchiveImportCanceled("An unexpected error occured while processing the PassGen Key Archive")
+		EndIf
 	Else
-		$hExportFile = 0
 		$dExportFileData = 0
 		Return KeyArchiveImportCanceled("Failed to decrypt PassGen Key Archive with the provided password")
 	EndIf
-	$hExportFile = 0
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
 	If KeyArchiveGetCount() Then
 		$iImportOverwrite = MsgBox(BitOR($MB_YESNOCANCEL, $MB_ICONQUESTION), "Import Key Archive", _
 				"Do you want to overwrite the existing Key Archive?" & @CRLF & @CRLF & "Yes = Overwrite, No = Append")
-		If $iImportOverwrite = $IDYES Then _GUICtrlListView_DeleteAllItems($hCtrl)
+		If $iImportOverwrite = $IDYES Then
+			For $iX = 0 To UBound($g_aKeyMgrChanges) - 1
+				$g_aKeyMgrChanges[$iX][0] = "DEL"
+			Next
+			_GUICtrlListView_DeleteAllItems($hCtrl)
+		EndIf
 		If $iImportOverwrite = $IDCANCEL Then
 			$dKeys = 0
 			Return KeyArchiveImportCanceled()
@@ -1271,7 +1373,7 @@ Func KeyManager_ActivatedItemPosition($hCtrl, $iItem, $iSubItem)
 	Return $aListViewItemPos
 EndFunc   ;==>KeyManager_ActivatedItemPosition
 
-Func KeyManager_AddKey($sGUID = "", $sDate = _NowCalcDate(), $sValue = "New Key!", $bActive = False)
+Func KeyManager_AddKey($sGUID = "", $sDate = _NowCalcDate(), $sValue = "New Key!", $bActive = False, $bNew = True)
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
 	If $sGUID = "" Then
 		$sGUID = _WinAPI_CreateGUID()
@@ -1283,6 +1385,17 @@ Func KeyManager_AddKey($sGUID = "", $sDate = _NowCalcDate(), $sValue = "New Key!
 	_GUICtrlListView_AddSubItem($hCtrl, $iNewItem, $sValue, 2)
 	_GUICtrlListView_AddSubItem($hCtrl, $iNewItem, $sGUID, 3)
 	If $bActive Then _GUICtrlListView_SetItemChecked($hCtrl, $iNewItem)
+	If $bNew Then
+		$iChangeArrayCount = UBound($g_aKeyMgrChanges)
+		If $iChangeArrayCount = 0 Then
+			Dim $g_aKeyMgrChanges[1][4] = [["", True, True, $sGUID]]
+		Else
+			_ArrayInsert($g_aKeyMgrChanges, 0, "")
+			$g_aKeyMgrChanges[0][1] = True
+			$g_aKeyMgrChanges[0][2] = True
+			$g_aKeyMgrChanges[0][3] = $sGUID
+		EndIf
+	EndIf
 	_GUICtrlListView_EndUpdate($hCtrl)
 EndFunc   ;==>KeyManager_AddKey
 
@@ -1328,11 +1441,12 @@ Func KeyManager_Close($sMsg = "Close", $bForce = False)
 			$bChangesMade = False
 			$bChangesPending = False
 			$bQuit = True
-			UILock(False)
 		EndIf
 	EndIf
 	KeyManager_Busy(False)
+	$g_aKeyMgrChanges = 0
 	KeyManager_Hide()
+	idTxtPassphrase_OnChange()
 	Return $bQuit
 EndFunc   ;==>KeyManager_Close
 
@@ -1356,6 +1470,7 @@ Func KeyManager_DeleteTempEditControl()
 	$idTempEditCtrl = -1
 	$hTempEditCtrl = -1
 	GUICtrlSetState($aKeyManagerGUI[$idKMListView], BitOR($GUI_ENABLE, $GUI_FOCUS))
+	_WinAPI_RedrawWindow($aKeyManagerGUI[$hKeyManagerGUI])
 EndFunc   ;==>KeyManager_DeleteTempEditControl
 
 Func KeyManager_EditDate()
@@ -1376,12 +1491,13 @@ Func KeyManager_EditItem()
 	Local $iSubItem = $aCurrentListViewItem[1]
 	Local $aItemPos = KeyManager_ActivatedItemPosition($hWndFrom, $iItem, $iSubItem)
 	_GUICtrlListView_SetItemSelected($hWndFrom, -1, False, False)
-	Local $sText = _GUICtrlListView_GetItemText($hWndFrom, $iItem, $iSubItem)
+	$sText = _GUICtrlListView_GetItemText($hWndFrom, $iItem, $iSubItem)
 	Switch $iSubItem
 		Case 1
 			$idTempEditCtrl = GUICtrlCreateDate($sText, $aItemPos[0], $aItemPos[1], $aItemPos[2], $aItemPos[3], $DTS_SHORTDATEFORMAT)
 			GUICtrlSendMsg(-1, $DTM_SETFORMATW, 0, "yyyy/MM/dd")
 		Case 2
+			If $sText = $sHiddenPassword Then $sText = KeyArchiveParseValue(_GUICtrlListView_GetItemText($hWndFrom, $iItem, 3))
 			$idTempEditCtrl = GUICtrlCreateInput($sText, $aItemPos[0], $aItemPos[1], $aItemPos[2], $aItemPos[3])
 	EndSwitch
 	$hTempEditCtrl = GUICtrlGetHandle($idTempEditCtrl)
@@ -1392,6 +1508,7 @@ Func KeyManager_EditItem()
 		Case 1
 			_SendMessage($hTempEditCtrl, $WM_LBUTTONDOWN, 1, $aItemPos[2] - 10)
 			idKMBtnSave_Enable(False)
+			HotKeyManager($e_HotKeyESC)
 		Case 2
 			KeyManager_EditValue()
 	EndSwitch
@@ -1399,7 +1516,6 @@ EndFunc   ;==>KeyManager_EditItem
 
 Func KeyManager_EditValue()
 	$g_iEditing = 2
-	idKMBtnSave_Enable(False)
 	GUICtrlSendMsg($idTempEditCtrl, $EM_SETSEL, 0, -1)
 	HotKeyManager($e_HotKeyESC + $e_HotKeyEnter)
 	TempEditControlValidKeyValue()
@@ -1407,13 +1523,14 @@ EndFunc   ;==>KeyManager_EditValue
 
 Func KeyManager_EditValueSave()
 	KeyManager_Busy(False)
-	HotKeyManager($e_HotKeyDEL)
+;~ 	HotKeyManager($e_HotKeyDEL)
 	Local $bValidKeyValue = TempEditControlValidKeyValue()
 	If Not $bValidKeyValue Then
 		Return KeyManager_EditValue()
 	EndIf
 	Local $sText = GUICtrlRead($idTempEditCtrl)
 	Local $sCurrentText = idKMListView_GetItem($aCurrentListViewItem[0], $aCurrentListViewItem[1])
+	If $sCurrentText = $sHiddenPassword Then $sCurrentText = KeyArchiveParseValue(idKMListView_GetItem($aCurrentListViewItem[0], 3))
 	If $sText <> $sCurrentText Then
 		KeyManager_SetValue($sText)
 	Else
@@ -1421,6 +1538,7 @@ Func KeyManager_EditValueSave()
 		If $bChangesMade Then KeyManager_ChangeMade()
 	EndIf
 	ToolTip("")
+;~ 	HotKeyManager($e_HotKeyDEL + $e_HotKeyESC)
 EndFunc   ;==>KeyManager_EditValueSave
 
 Func KeyManager_GetActive()
@@ -1436,11 +1554,14 @@ Func KeyManager_Hide()
 	ToolTip("")
 	HotKeyManager()
 	If $bChangesMade Then $bChangesPending = True
-	UILock(False)
 	GUISetState(@SW_HIDE, $aKeyManagerGUI[$hKeyManagerGUI])
+	GUICtrl_SetChecked($aKeyManagerGUI[$idKMMnuViewShow], False)
 	GUISwitch($aGUI[$hGUI])
-	KeyHide()
 EndFunc   ;==>KeyManager_Hide
+
+Func KeyManager_IsBusy()
+	Return $g_bKeyManagerBusy
+EndFunc
 
 Func KeyManager_KeyActivateEvent()
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
@@ -1458,7 +1579,7 @@ Func KeyManager_KeyActivateEvent()
 			_GUICtrlListView_SetItemChecked($hCtrl, $iActivatedItem)
 		EndIf
 	EndIf
-	KeyManager_KeySetActive(KeyManager_GetActive())
+	KeyManager_ChangeMade()
 	_GUICtrlListView_EndUpdate($hCtrl)
 EndFunc   ;==>KeyManager_KeyActivateEvent
 
@@ -1483,24 +1604,47 @@ EndFunc   ;==>KeyManager_OpenGUI
 Func KeyManager_Populate()
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
 	_GUICtrlListView_BeginUpdate($hCtrl)
+	_GUICtrlListView_SetSelectedColumn($hCtrl, -1)
 	_GUICtrlListView_DeleteAllItems($hCtrl)
 	Local $aKeyArchive = KeyArchiveGet()
 	Local $iCount = UBound($aKeyArchive)
-	If Not $iCount Then Return 0
-	Local $sCurrentKey = RegistryKeyGetCurrent()
-	For $iX = $iCount - 1 To 0 Step -1
-		Local $sDate = StringLeft($aKeyArchive[$iX][1], $DATEFORMATBYTELEN)
-		Local $sValue = StringRight($aKeyArchive[$iX][1], StringLen($aKeyArchive[$iX][1]) - $DATEFORMATBYTELEN)
-		Local $sGUID = $aKeyArchive[$iX][0]
-		Local $bActive = ($sGUID = $sCurrentKey) ? True : False
-		KeyManager_AddKey($sGUID, $sDate, $sValue, $bActive)
-	Next
+	If $iCount Then
+		$g_aKeyMgrChanges = $g_aKeyArchive
+		_ArrayColInsert($g_aKeyMgrChanges, 0)
+		_ArrayColInsert($g_aKeyMgrChanges, 0)
+		_ArrayColInsert($g_aKeyMgrChanges, 0)
+		Local $sCurrentKey = RegistryKeyGetCurrent()
+		For $iX = $iCount - 1 To 0 Step -1
+			Local $sDate = StringLeft($aKeyArchive[$iX][1], $DATEFORMATBYTELEN)
+			Local $sValue = ""
+			If GUICtrl_GetChecked($aKeyManagerGUI[$idKMMnuViewShow]) Then
+				$sValue = StringRight($aKeyArchive[$iX][1], StringLen($aKeyArchive[$iX][1]) - $DATEFORMATBYTELEN)
+			Else
+				$sValue = $sHiddenPassword
+			EndIf
+			Local $sGUID = $aKeyArchive[$iX][0]
+			Local $bActive = ($sGUID = $sCurrentKey) ? True : False
+			KeyManager_AddKey($sGUID, $sDate, $sValue, $bActive, False)
+		Next
+	EndIf
+	_GUICtrlListView_SetColumnWidth($hCtrl, 0, 50)
+	_GUICtrlListView_SetColumnWidth($hCtrl, 1, 100)
+	_GUICtrlListView_SetColumnWidth($hCtrl, 2, 158)
+	_GUICtrlListView_SetColumnWidth($hCtrl, 3, 0)
 	_GUICtrlListView_EndUpdate($hCtrl)
 EndFunc   ;==>KeyManager_Populate
 
 Func KeyManager_RemoveSelected()
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
 	If Not _GUICtrlListView_GetSelectedCount($hCtrl) Then Return 0
+	$aSelectedItems = _GUICtrlListView_GetSelectedIndices($hCtrl, True)
+	For $iItem = 1 To $aSelectedItems[0]
+		Local $sGUID = _GUICtrlListView_GetItemText($hCtrl, $aSelectedItems[$iItem], 3)
+		Local $iChangesArrayLocation = _ArraySearch($g_aKeyMgrChanges, $sGUID, 0, 0, 0, 1, 1, 3)
+		_ArrayDelete($g_aKeyMgrChanges, $iChangesArrayLocation)
+		$iNewItem = _ArrayAdd($g_aKeyMgrChanges, "DEL")
+		$g_aKeyMgrChanges[$iNewItem][3] = $sGUID
+	Next
 	_GUICtrlListView_BeginUpdate($hCtrl)
 	_GUICtrlListView_DeleteItemsSelected($hCtrl)
 	If KeyManager_GetActive() = -1 Then
@@ -1511,6 +1655,7 @@ Func KeyManager_RemoveSelected()
 EndFunc   ;==>KeyManager_RemoveSelected
 
 Func KeyManager_Save()
+	KeyManager_Busy()
 	If $g_iEditing Then
 		Switch $g_iEditing
 			Case 1
@@ -1520,19 +1665,25 @@ Func KeyManager_Save()
 		EndSwitch
 		Return 0
 	EndIf
-	KeyArchiveClear(True)
-	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
-	For $iX = 0 To _GUICtrlListView_GetItemCount($hCtrl) - 1
-		Local $sDate = _GUICtrlListView_GetItemText($hCtrl, $iX, 1)
-		Local $sValue = _GUICtrlListView_GetItemText($hCtrl, $iX, 2)
-		Local $sGUID = _GUICtrlListView_GetItemText($hCtrl, $iX, 3)
-		Local $bActive = _GUICtrlListView_GetItemChecked($hCtrl, $iX)
-		If $bActive Then RegistryKeySelect($sGUID)
-		KeySaveToReg($sGUID, $sValue, $sDate)
+	For $iItem = 0 To UBound($g_aKeyMgrChanges) - 1
+		If $g_aKeyMgrChanges[$iItem][0] == "DEL" Then
+			RegDelete($REGKEYPATH, $g_aKeyMgrChanges[$iItem][3])
+		ElseIf $g_aKeyMgrChanges[$iItem][1] == True Or $g_aKeyMgrChanges[$iItem][2] == True Then
+			Local $hCtrl = $aKeyManagerGUI[$hKMListView]
+			Local $sDate = _GUICtrlListView_GetItemText($hCtrl, $iItem, 1)
+			Local $sValue = _GUICtrlListView_GetItemText($hCtrl, $iItem, 2)
+			Local $sGUID = _GUICtrlListView_GetItemText($hCtrl, $iItem, 3)
+			If $sValue = $sHiddenPassword Then $sValue = KeyArchiveParseValue($sGUID)
+			Local $bActive = _GUICtrlListView_GetItemChecked($hCtrl, $iItem)
+			If $bActive Then RegistryKeySelect($sGUID)
+			KeySaveToReg($sGUID, $sValue, $sDate)
+		EndIf
 	Next
-	idTxtKey_SetData(KeyArchiveParseValue(RegistryKeyGetCurrent()))
+	KeyManager_KeySetActive(KeyManager_GetActive())
 	$bChangesMade = False
 	idKMBtnSave_Enable(False)
+	KeyManager_Busy(False)
+	KeyManager_Close()
 EndFunc   ;==>KeyManager_Save
 
 Func KeyManager_SelectAll($bFlag = True)
@@ -1551,17 +1702,36 @@ EndFunc   ;==>KeyManager_SetActive
 
 Func KeyManager_SetValue($sValue)
 	_GUICtrlListView_SetItemText($aKeyManagerGUI[$hKMListView], $aCurrentListViewItem[0], $sValue, $aCurrentListViewItem[1])
+	$g_aKeyMgrChanges[$aCurrentListViewItem[0]][$aCurrentListViewItem[1]] = True
 	KeyManager_ChangeMade()
 	KeyManager_DeleteTempEditControl()
 EndFunc   ;==>KeyManager_SetValue
 
 Func KeyManager_Show()
-	UILock()
 	KeyManager_Busy(False)
 	GUISwitch($aKeyManagerGUI[$hKeyManagerGUI])
 	GUISetState(@SW_SHOW)
-	KeyShow()
 EndFunc   ;==>KeyManager_Show
+
+Func KeyManager_ShowKeys($bFlag)
+	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
+	_GUICtrlListView_BeginUpdate($hCtrl)
+	For $iX = 0 To _GUICtrlListView_GetItemCount($hCtrl) - 1
+		Local $sGUID = _GUICtrlListView_GetItemText($hCtrl, $iX, 3)
+		Local $sValue = _GUICtrlListView_GetItemText($hCtrl, $iX, 2)
+		If $bFlag Then
+			If $sValue = $sHiddenPassword Then _GUICtrlListView_SetItemText($hCtrl, $iX, KeyArchiveParseValue($sGUID), 2)
+		Else
+			If $sValue = KeyArchiveParseValue($sGUID) Then _GUICtrlListView_SetItemText($hCtrl, $iX, $sHiddenPassword, 2)
+		EndIf
+	Next
+	_GUICtrlListView_EndUpdate($hCtrl)
+EndFunc   ;==>KeyManager_ShowKeys
+
+Func KeyManager_ShowKeysToggle()
+	$iState = GUICtrl_MenuItemToggle($aKeyManagerGUI[$idKMMnuViewShow])
+	Return KeyManager_ShowKeys(($iState == $GUI_CHECKED) ? True : False)
+EndFunc   ;==>KeyManager_ShowKeysToggle
 
 Func KeyManager_Sort($iCol = -1)
 	Local $hCtrl = $aKeyManagerGUI[$hKMListView]
@@ -1569,6 +1739,12 @@ Func KeyManager_Sort($iCol = -1)
 	If $iCol = 0 Then Return 0
 	_GUICtrlListView_BeginUpdate($hCtrl)
 	_GUICtrlListView_SortItems($hCtrl, $iCol)
+	For $iItem = 0 To _GUICtrlListView_GetItemCount($hCtrl) - 1
+		Local $sGUID = _GUICtrlListView_GetItemText($hCtrl, $iItem, 3)
+		Local $iChangesArrayLocation = _ArraySearch($g_aKeyMgrChanges, $sGUID, 0, 0, 0, 1, 1, 3)
+		$g_aKeyMgrChanges[$iChangesArrayLocation][0] = $iItem
+	Next
+	_ArraySort($g_aKeyMgrChanges)
 	_GUICtrlListView_EndUpdate($hCtrl)
 EndFunc   ;==>KeyManager_Sort
 
@@ -1577,10 +1753,7 @@ Func KeyProtect($sValue)
 EndFunc   ;==>KeyProtect
 
 Func KeyReadFromReg($sKeyGUID)
-	$hProtectedKey = RegistryKeyRead($sKeyGUID)
-	If @error Then Return 0
-	$sKey = KeyUnprotect($hProtectedKey)
-	idTxtKey_SetData(StringRight($sKey, StringLen($sKey) - $DATEFORMATBYTELEN))
+	idTxtKey_SetData(KeyArchiveParseValue($sKeyGUID))
 	Return 1
 EndFunc   ;==>KeyReadFromReg
 
@@ -1653,7 +1826,7 @@ Func RegistryKeyWriteBinary($sKeyGUID, $hValue)
 EndFunc   ;==>RegistryKeyWriteBinary
 
 Func TempEditControlValidKeyValue()
-	Local $sValue = GUICtrlRead($idTempEditCtrl)
+	Local $sValue = idTempEditCtrl_Read()
 	Local $sMsg = ""
 	Local $aWinPos = WinGetPos($aKeyManagerGUI[$hKeyManagerGUI])
 	Local $aEditCtrlPos = ControlGetPos($aKeyManagerGUI[$hKMListView], "", $hTempEditCtrl)
